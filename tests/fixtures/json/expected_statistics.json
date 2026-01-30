@@ -1,0 +1,19 @@
+{
+  "total_tables": 10,
+  "used_tables": 6,
+  "unused_tables": 4,
+  "total_objects": 8,
+  "usage_percentage": 60.0,
+  "unused_table_ids": [4, 5, 6, 7, 8, 9],
+  "most_referenced_table": {
+    "table_id": 1,
+    "table_name": "Customers",
+    "reference_count": 3
+  },
+  "object_type_distribution": {
+    "Form": 2,
+    "Query": 2,
+    "Macro": 2,
+    "Report": 2
+  }
+}

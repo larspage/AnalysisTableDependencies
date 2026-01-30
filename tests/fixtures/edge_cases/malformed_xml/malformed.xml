@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<dataroot xmlns:od="urn:schemas-microsoft-com:officedata">
+  <Analysis_Tables>
+    <TableID>1</TableID>
+    <TableName>TestTable</TableName>
+  <!-- Missing closing tag -->
+<dataroot>

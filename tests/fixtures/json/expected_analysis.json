@@ -1,0 +1,164 @@
+{
+  "statistics": {
+    "total_tables": 10,
+    "used_tables": 6,
+    "unused_tables": 4,
+    "total_objects": 8
+  },
+  "tables": {
+    "1": {
+      "table_id": 1,
+      "table_name": "Customers",
+      "is_used": true,
+      "referencing_objects": [
+        {
+          "object_id": 100,
+          "object_name": "CustomerForm",
+          "object_type": "Form",
+          "is_active": true
+        },
+        {
+          "object_id": 103,
+          "object_name": "CustomerQuery",
+          "object_type": "Query",
+          "is_active": true
+        },
+        {
+          "object_id": 106,
+          "object_name": "CustomerReport",
+          "object_type": "Report",
+          "is_active": true
+        }
+      ]
+    },
+    "2": {
+      "table_id": 2,
+      "table_name": "Orders",
+      "is_used": true,
+      "referencing_objects": [
+        {
+          "object_id": 101,
+          "object_name": "OrderEntry",
+          "object_type": "Form",
+          "is_active": true
+        },
+        {
+          "object_id": 103,
+          "object_name": "CustomerQuery",
+          "object_type": "Query",
+          "is_active": true
+        },
+        {
+          "object_id": 107,
+          "object_name": "SalesReport",
+          "object_type": "Report",
+          "is_active": true
+        }
+      ]
+    },
+    "3": {
+      "table_id": 3,
+      "table_name": "Products",
+      "is_used": true,
+      "referencing_objects": [
+        {
+          "object_id": 102,
+          "object_name": "ProductQuery",
+          "object_type": "Query",
+          "is_active": true
+        }
+      ]
+    },
+    "4": {
+      "table_id": 4,
+      "table_name": "Suppliers",
+      "is_used": false,
+      "referencing_objects": []
+    },
+    "5": {
+      "table_id": 5,
+      "table_name": "Categories",
+      "is_used": false,
+      "referencing_objects": []
+    },
+    "6": {
+      "table_id": 6,
+      "table_name": "Employees",
+      "is_used": false,
+      "referencing_objects": []
+    },
+    "7": {
+      "table_id": 7,
+      "table_name": "Shippers",
+      "is_used": false,
+      "referencing_objects": []
+    },
+    "8": {
+      "table_id": 8,
+      "table_name": "OrderDetails",
+      "is_used": false,
+      "referencing_objects": []
+    },
+    "9": {
+      "table_id": 9,
+      "table_name": "Inventory",
+      "is_used": false,
+      "referencing_objects": []
+    },
+    "10": {
+      "table_id": 10,
+      "table_name": "Sales",
+      "is_used": true,
+      "referencing_objects": [
+        {
+          "object_id": 107,
+          "object_name": "SalesReport",
+          "object_type": "Report",
+          "is_active": true
+        }
+      ]
+    }
+  },
+  "objects": {
+    "100": {
+      "object_id": 100,
+      "object_name": "CustomerForm",
+      "object_type": "Form"
+    },
+    "101": {
+      "object_id": 101,
+      "object_name": "OrderEntry",
+      "object_type": "Form"
+    },
+    "102": {
+      "object_id": 102,
+      "object_name": "ProductQuery",
+      "object_type": "Query"
+    },
+    "103": {
+      "object_id": 103,
+      "object_name": "CustomerQuery",
+      "object_type": "Query"
+    },
+    "104": {
+      "object_id": 104,
+      "object_name": "InventoryMacro",
+      "object_type": "Macro"
+    },
+    "105": {
+      "object_id": 105,
+      "object_name": "DataCleanup",
+      "object_type": "Macro"
+    },
+    "106": {
+      "object_id": 106,
+      "object_name": "CustomerReport",
+      "object_type": "Report"
+    },
+    "107": {
+      "object_id": 107,
+      "object_name": "SalesReport",
+      "object_type": "Report"
+    }
+  }
+}

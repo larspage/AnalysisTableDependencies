@@ -1,0 +1,65 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "database-dependency-analyzer"
+version = "0.1.0"
+description = "A utility for analyzing Microsoft Access database dependencies"
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.8"
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+dependencies = [
+    "pydantic>=1.8.0",
+    "tqdm>=4.62.0",
+    "jinja2>=3.0.0",
+    "click>=8.0.0",
+    "lxml>=4.6.0",
+]
+optional-dependencies = {dev = [
+    "pytest>=7.0.0",
+    "black>=22.0.0",
+    "isort>=5.10.0",
+    "flake8>=4.0.0",
+    "mypy>=0.950",
+    "pytest-cov>=3.0.0",
+    "pre-commit>=2.17.0",
+]}
+
+[project.urls]
+Homepage = "https://github.com/yourusername/database-dependency-analyzer"
+Repository = "https://github.com/yourusername/database-dependency-analyzer.git"
+Issues = "https://github.com/yourusername/database-dependency-analyzer/issues"
+
+[project.scripts]
+db-analyzer = "database_dependency_analyzer.main:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-dir]
+"" = "src"
+
+[tool.black]
+line-length = 88
+target-version = ['py38']
+
+[tool.isort]
+profile = "black"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = "test_*.py"
+python_classes = "Test*"
+python_functions = "test_*"
