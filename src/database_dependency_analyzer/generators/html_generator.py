@@ -81,7 +81,7 @@ class HTMLGenerator:
             'used_tables': stats.used_tables,
             'unused_tables': stats.unused_tables,
             'total_objects': stats.total_objects,
-            'objects_by_type': stats.objects_by_type,
+            'object_type_distribution': stats.object_type_distribution,
             'total_dependencies': stats.total_dependencies,
             'active_dependencies': stats.active_dependencies,
             'usage_percentage': stats.usage_percentage,
@@ -206,22 +206,22 @@ class HTMLGenerator:
                 <div class="object-type-stats">
                     <div class="type-stat" data-type="Form">
                         <span class="type-icon form-icon">📄</span>
-                        <span class="type-count" id="form-count">{stats.objects_by_type.get('Form', 0)}</span>
+                        <span class="type-count" id="form-count">{stats.object_type_distribution.get('Form', 0)}</span>
                         <span class="type-label">Forms</span>
                     </div>
                     <div class="type-stat" data-type="Query">
                         <span class="type-icon query-icon">🔍</span>
-                        <span class="type-count" id="query-count">{stats.objects_by_type.get('Query', 0)}</span>
+                        <span class="type-count" id="query-count">{stats.object_type_distribution.get('Query', 0)}</span>
                         <span class="type-label">Queries</span>
                     </div>
                     <div class="type-stat" data-type="Macro">
                         <span class="type-icon macro-icon">⚡</span>
-                        <span class="type-count" id="macro-count">{stats.objects_by_type.get('Macro', 0)}</span>
+                        <span class="type-count" id="macro-count">{stats.object_type_distribution.get('Macro', 0)}</span>
                         <span class="type-label">Macros</span>
                     </div>
                     <div class="type-stat" data-type="Report">
                         <span class="type-icon report-icon">📊</span>
-                        <span class="type-count" id="report-count">{stats.objects_by_type.get('Report', 0)}</span>
+                        <span class="type-count" id="report-count">{stats.object_type_distribution.get('Report', 0)}</span>
                         <span class="type-label">Reports</span>
                     </div>
                 </div>

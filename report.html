@@ -790,6 +790,206 @@ body {
 .details-btn:hover {
     background: #1d4ed8;
 }
+
+/* Usage Table Styles */
+.usage-table-section {
+    margin: 2rem 0;
+    padding: 1.5rem;
+    background: white;
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow);
+}
+
+.usage-table-section h2 {
+    margin-bottom: 1rem;
+    color: #111827;
+    font-size: var(--font-size-lg);
+}
+
+.usage-table-container {
+    overflow-x: auto;
+}
+
+.usage-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.usage-table th,
+.usage-table td {
+    padding: 0.75rem;
+    text-align: left;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.usage-table th {
+    background: #f9fafb;
+    font-weight: 600;
+    color: #374151;
+}
+
+.usage-table tbody tr.row-used {
+    background: #f0fdf4;
+}
+
+.usage-table tbody tr.row-unused {
+    background: #fef2f2;
+}
+
+.status-indicator {
+    margin-right: 0.5rem;
+    font-size: 0.75rem;
+}
+
+.status-indicator.used { color: var(--used-color); }
+.status-indicator.unused { color: var(--unused-color); }
+
+.object-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.object-list li {
+    padding: 0.25rem 0;
+    font-size: 0.875rem;
+}
+
+.object-list .object-type-badge {
+    display: inline-block;
+    padding: 0.125rem 0.5rem;
+    border-radius: 0.25rem;
+    font-size: 0.7rem;
+    font-weight: 500;
+    margin-right: 0.5rem;
+    min-width: 60px;
+    text-align: center;
+}
+
+.object-list .object-type-badge.form {
+    background: #dbeafe;
+    color: var(--form-color);
+}
+
+.object-list .object-type-badge.query {
+    background: #fef3c7;
+    color: var(--query-color);
+}
+
+.object-list .object-type-badge.macro {
+    background: #fee2e2;
+    color: var(--macro-color);
+}
+
+.object-list .object-type-badge.report {
+    background: #dcfce7;
+    color: var(--report-color);
+}
+
+.type-count-badge {
+    display: inline-block;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    font-size: 0.75rem;
+    margin-right: 0.25rem;
+}
+
+.type-count-badge.form {
+    background: #dbeafe;
+    color: var(--form-color);
+}
+
+.type-count-badge.query {
+    background: #fef3c7;
+    color: var(--query-color);
+}
+
+.type-count-badge.macro {
+    background: #fee2e2;
+    color: var(--macro-color);
+}
+
+.type-count-badge.report {
+    background: #dcfce7;
+    color: var(--report-color);
+}
+
+/* Dependency Diagram Styles */
+.dependency-diagram-section {
+    margin: 2rem 0;
+    padding: 1.5rem;
+    background: white;
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow);
+}
+
+.dependency-diagram-section h2 {
+    margin-bottom: 1rem;
+    color: #111827;
+    font-size: var(--font-size-lg);
+}
+
+.diagram-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    padding: 0.75rem;
+    background: #f9fafb;
+    border-radius: var(--border-radius);
+}
+
+.diagram-controls label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    font-size: 0.875rem;
+}
+
+.dependency-diagram {
+    width: 100%;
+    min-height: 200px;
+    overflow-x: auto;
+    border: 1px solid #e5e7eb;
+    border-radius: var(--border-radius);
+    background: #fafafa;
+}
+
+.dependency-diagram svg {
+    display: block;
+    margin: 0 auto;
+}
+
+.diagram-node {
+    cursor: pointer;
+    transition: opacity 0.2s ease;
+}
+
+.diagram-node:hover {
+    opacity: 0.8;
+}
+
+.diagram-link {
+    stroke-linecap: round;
+}
+
+.diagram-link.active {
+    stroke: var(--used-color);
+}
+
+.diagram-link.inactive {
+    stroke: var(--unused-color);
+    stroke-dasharray: 5, 5;
+}
+
+.no-data-message {
+    text-align: center;
+    padding: 2rem;
+    color: #6b7280;
+    font-style: italic;
+}
+
     </style>
 </head>
 <body>
@@ -816,7 +1016,7 @@ body {
                     </div>
                 </div>
                 <div class="report-meta">
-                    <span class="timestamp">Generated: <span id="timestamp">2026-01-30T12:08:25.681582</span></span>
+                    <span class="timestamp">Generated: <span id="timestamp">2026-01-30T16:40:20.789111</span></span>
                     <span class="processing-time">Processing Time: <span id="processing-time">0.00s</span></span>
                 </div>
             </div>
@@ -899,6 +1099,42 @@ body {
             </div>
         </nav>
                 <main class="main-content">
+            
+            <section class="usage-table-section">
+                <h2>Table Usage Status</h2>
+                <div class="usage-table-container">
+                    <table class="usage-table">
+                        <thead>
+                            <tr>
+                                <th>Status</th>
+                                <th>Table Name</th>
+                                <th>Referencing Objects</th>
+                                <th>Object Types</th>
+                            </tr>
+                        </thead>
+                        <tbody id="usage-table-body">
+                            <!-- Rows will be inserted here -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        
+            
+            <section class="dependency-diagram-section">
+                <h2>Table Dependency Diagram</h2>
+                <div class="diagram-controls">
+                    <label><input type="checkbox" id="show-tables" checked> Tables</label>
+                    <label><input type="checkbox" id="show-forms" checked> Forms</label>
+                    <label><input type="checkbox" id="show-queries" checked> Queries</label>
+                    <label><input type="checkbox" id="show-macros" checked> Macros</label>
+                    <label><input type="checkbox" id="show-reports" checked> Reports</label>
+                </div>
+                <div id="dependency-diagram" class="dependency-diagram">
+                    <!-- SVG diagram rendered here -->
+                </div>
+            </section>
+        
+
             <div class="content-header">
                 <h2>Table Dependencies</h2>
                 <div class="header-actions">
@@ -9490,7 +9726,7 @@ body {
     "used_tables": 71,
     "unused_tables": 175,
     "total_objects": 1312,
-    "objects_by_type": {
+    "object_type_distribution": {
       "Queries": 695,
       "Reports": 93,
       "Macros": 284,
@@ -9501,8 +9737,8 @@ body {
     "usage_percentage": 28.86178861788618,
     "unused_percentage": 71.13821138211382
   },
-  "timestamp": "2026-01-30T12:08:25.681582",
-  "processing_time": 0.0013475418090820312
+  "timestamp": "2026-01-30T16:40:20.789111",
+  "processing_time": 0.0013017654418945312
 }
     </script>
 </body>
@@ -9954,10 +10190,263 @@ body {
                 this.currentView = view;
                 this.updateDisplay();
             }
+
+            // ========== Usage Table Methods ==========
+
+            renderUsageTable() {
+                const tbody = document.getElementById('usage-table-body');
+                if (!tbody) return;
+
+                const tables = Object.values(this.data.tables);
+                tbody.innerHTML = '';
+
+                tables.forEach(table => {
+                    const row = this.createUsageTableRow(table);
+                    tbody.appendChild(row);
+                });
+            }
+
+            createUsageTableRow(table) {
+                const row = document.createElement('tr');
+                row.className = table.is_used ? 'row-used' : 'row-unused';
+
+                // Status column
+                const statusCell = document.createElement('td');
+                statusCell.innerHTML = table.is_used
+                    ? '<span class="status-indicator used">●</span> Used'
+                    : '<span class="status-indicator unused">●</span> Unused';
+
+                // Table name column
+                const nameCell = document.createElement('td');
+                nameCell.textContent = table.table_name;
+
+                // Referencing objects column
+                const refsCell = document.createElement('td');
+                if (table.referencing_objects.length > 0) {
+                    const objectList = document.createElement('ul');
+                    objectList.className = 'object-list';
+                    table.referencing_objects.forEach(obj => {
+                        const item = document.createElement('li');
+                        item.innerHTML = `<span class="object-type-badge ${obj.object_type.toLowerCase()}">${obj.object_type}</span> ${obj.object_name}`;
+                        objectList.appendChild(item);
+                    });
+                    refsCell.appendChild(objectList);
+                } else {
+                    refsCell.textContent = '—';
+                }
+
+                // Object types summary column
+                const typesCell = document.createElement('td');
+                const typeCounts = {};
+                table.referencing_objects.forEach(obj => {
+                    typeCounts[obj.object_type] = (typeCounts[obj.object_type] || 0) + 1;
+                });
+                Object.entries(typeCounts).forEach(([type, count]) => {
+                    const badge = document.createElement('span');
+                    badge.className = `type-count-badge ${type.toLowerCase()}`;
+                    badge.textContent = `${type}: ${count}`;
+                    typesCell.appendChild(badge);
+                });
+
+                row.appendChild(statusCell);
+                row.appendChild(nameCell);
+                row.appendChild(refsCell);
+                row.appendChild(typesCell);
+
+                return row;
+            }
+
+            // ========== Dependency Diagram Methods ==========
+
+            initDependencyDiagram() {
+                this.diagramFilters = {
+                    tables: true,
+                    forms: true,
+                    queries: true,
+                    macros: true,
+                    reports: true
+                };
+
+                // Initialize filter event listeners
+                document.querySelectorAll('.diagram-controls input[type="checkbox"]').forEach(checkbox => {
+                    checkbox.addEventListener('change', (e) => {
+                        const type = e.target.id.replace('show-', '');
+                        this.diagramFilters[type] = e.target.checked;
+                        this.renderDependencyDiagram();
+                    });
+                });
+
+                this.renderDependencyDiagram();
+            }
+
+            renderDependencyDiagram() {
+                const container = document.getElementById('dependency-diagram');
+                if (!container) return;
+
+                const nodes = this.buildDiagramNodes();
+                const links = this.buildDiagramLinks();
+
+                if (nodes.length === 0) {
+                    container.innerHTML = '<p class="no-data-message">No dependencies to display.</p>';
+                    return;
+                }
+
+                const svg = this.createDiagramSVG(nodes, links);
+                container.innerHTML = '';
+                container.appendChild(svg);
+            }
+
+            buildDiagramNodes() {
+                const nodes = [];
+                let yOffset = 30;
+
+                // Add tables
+                if (this.diagramFilters.tables) {
+                    Object.values(this.data.tables).forEach(table => {
+                        nodes.push({
+                            id: `table-${table.table_id}`,
+                            label: table.table_name,
+                            type: 'table',
+                            status: table.is_used ? 'used' : 'unused',
+                            x: 100,
+                            y: yOffset
+                        });
+                        yOffset += 50;
+                    });
+                }
+
+                // Add objects (Forms, Queries, Macros, Reports)
+                const objectTypes = ['Form', 'Query', 'Macro', 'Report'];
+                const objectXPositions = {
+                    'Form': 350,
+                    'Query': 500,
+                    'Macro': 650,
+                    'Report': 800
+                };
+
+                objectTypes.forEach(objType => {
+                    if (!this.diagramFilters[objType.toLowerCase() + 's']) return;
+
+                    const filterType = objType.toLowerCase() + 's';
+                    if (!this.diagramFilters[filterType]) return;
+
+                    Object.values(this.data.objects).forEach(obj => {
+                        if (obj.object_type === objType) {
+                            nodes.push({
+                                id: `${objType.toLowerCase()}-${obj.object_id}`,
+                                label: obj.object_name,
+                                type: objType.toLowerCase(),
+                                status: 'active',
+                                x: objectXPositions[objType],
+                                y: yOffset
+                            });
+                            yOffset += 40;
+                        }
+                    });
+                });
+
+                return nodes;
+            }
+
+            buildDiagramLinks() {
+                const links = [];
+
+                // Table → Object links
+                Object.values(this.data.tables).forEach(table => {
+                    table.referencing_objects.forEach(ref => {
+                        const targetType = ref.object_type.toLowerCase();
+                        const targetId = `${targetType}-${ref.object_id}`;
+                        links.push({
+                            source: `table-${table.table_id}`,
+                            target: targetId,
+                            active: ref.active
+                        });
+                    });
+                });
+
+                return links;
+            }
+
+            createDiagramSVG(nodes, links) {
+                const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                const width = 900;
+                const height = Math.max(250, nodes.length * 45 + 60);
+                svg.setAttribute('width', width.toString());
+                svg.setAttribute('height', height.toString());
+                svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
+
+                // Draw links first (behind nodes)
+                links.forEach(link => {
+                    const source = nodes.find(n => n.id === link.source);
+                    const target = nodes.find(n => n.id === link.target);
+                    if (source && target) {
+                        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                        line.setAttribute('x1', source.x.toString());
+                        line.setAttribute('y1', source.y.toString());
+                        line.setAttribute('x2', target.x.toString());
+                        line.setAttribute('y2', target.y.toString());
+                        line.setAttribute('stroke', link.active ? '#16a34a' : '#dc2626');
+                        line.setAttribute('stroke-width', '2');
+                        line.setAttribute('class', link.active ? 'diagram-link active' : 'diagram-link inactive');
+                        svg.appendChild(line);
+                    }
+                });
+
+                // Draw nodes
+                nodes.forEach(node => {
+                    const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                    g.setAttribute('class', 'diagram-node');
+
+                    // Node rectangle
+                    const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                    const textWidth = Math.max(100, node.label.length * 8);
+                    rect.setAttribute('x', (node.x - textWidth / 2).toString());
+                    rect.setAttribute('y', (node.y - 12).toString());
+                    rect.setAttribute('width', textWidth.toString());
+                    rect.setAttribute('height', '24');
+                    rect.setAttribute('rx', '4');
+                    rect.setAttribute('fill', this.getDiagramNodeColor(node.type));
+                    if (node.status === 'unused') {
+                        rect.setAttribute('stroke', '#dc2626');
+                        rect.setAttribute('stroke-width', '2');
+                    }
+                    g.appendChild(rect);
+
+                    // Node label
+                    const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                    text.setAttribute('x', node.x.toString());
+                    text.setAttribute('y', (node.y + 4).toString());
+                    text.setAttribute('text-anchor', 'middle');
+                    text.setAttribute('fill', 'white');
+                    text.setAttribute('font-size', '11');
+                    text.setAttribute('font-weight', '500');
+                    text.textContent = node.label.length > 15 ? node.label.substring(0, 14) + '…' : node.label;
+                    g.appendChild(text);
+
+                    svg.appendChild(g);
+                });
+
+                return svg;
+            }
+
+            getDiagramNodeColor(type) {
+                const colors = {
+                    'table': '#2563eb',
+                    'form': '#3b82f6',
+                    'query': '#f59e0b',
+                    'macro': '#dc2626',
+                    'report': '#16a34a'
+                };
+                return colors[type] || '#6b7280';
+            }
         }
 
         // Initialize when DOM is loaded
         document.addEventListener('DOMContentLoaded', () => {
-            new ReportController();
+            const controller = new ReportController();
+            // Initialize usage table
+            controller.renderUsageTable();
+            // Initialize dependency diagram
+            controller.initDependencyDiagram();
         });
     </script>
