@@ -4,6 +4,8 @@ tqdm>=4.62.0
 jinja2>=3.0.0
 click>=8.0.0
 lxml>=4.6.0
+flask>=2.3.0
+werkzeug>=2.3.0
 
 # Development dependencies
 pytest>=7.0.0
