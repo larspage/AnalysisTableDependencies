@@ -5,6 +5,10 @@ import sys
 from pathlib import Path
 from typing import Optional
 
+# Add the project root to the Python path to enable imports
+project_root = Path(__file__).parent
+sys.path.insert(0, str(project_root))
+
 from database_dependency_analyzer.analyzers.dependency_analyzer import DependencyAnalyzer
 from database_dependency_analyzer.console import ArgumentParser, OutputFormatter, ProgressTracker
 from database_dependency_analyzer.models.analysis_result import AnalysisResult
@@ -14,7 +18,7 @@ from database_dependency_analyzer.parsers import (
     DependencyParser
 )
 
-from .config import ConfigManager
+from config import ConfigManager
 
 
 def setup_logging(verbose: bool = False) -> None:
@@ -49,13 +53,13 @@ def load_data(config, progress_tracker: ProgressTracker) -> tuple:
         # Parse tables
         progress_tracker.show_message("Parsing tables...")
         table_parser = TableParser(config)
-        tables = table_parser.parse_file(config.tables_file)
+        tables = table_parser.parse(config.tables_file)
         progress.update()
 
         # Parse objects
         progress_tracker.show_message("Parsing objects...")
         object_parser = ObjectParser(config)
-        objects = object_parser.parse_file(config.objects_file)
+        objects = object_parser.parse(config.objects_file)
         progress.update()
 
         # Parse table dependencies
@@ -98,7 +102,7 @@ def perform_analysis(config, tables: dict, objects: dict,
     analyzer = DependencyAnalyzer(config)
     result = analyzer.analyze(tables, objects, table_dependencies, object_dependencies)
 
-    progress_tracker.show_message(f"Analysis complete. Found {len(result.unused_tables)} unused tables.")
+    progress_tracker.show_message(f"Analysis complete. Found {len(result.get_unused_tables())} unused tables.")
 
     return result
 
@@ -120,7 +124,7 @@ def generate_output(config, result: AnalysisResult,
     # Console output
     if config.console_output:
         print("\n" + output_formatter.format_summary(result))
-        print("\n" + output_formatter.format_unused_tables(result.unused_tables))
+        print("\n" + output_formatter.format_unused_tables(result.get_unused_tables()))
 
         if config.verbose:
             print("\n" + output_formatter.format_statistics(result.statistics))

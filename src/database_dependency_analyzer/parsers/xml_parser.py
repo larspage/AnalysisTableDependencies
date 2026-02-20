@@ -144,12 +144,15 @@ class BaseXMLParser(ABC):
         Args:
             element: Element to search in.
             tag: Tag name to find.
-            default: Default value if conversion fails.
+            default: Default value if conversion fails or field is missing.
 
         Returns:
             Boolean value or default.
         """
         text = self.get_text(element, tag).lower()
+        if not text:
+            # Empty string means field is missing - use default without warning
+            return default
         if text in ('true', '1', 'yes'):
             return True
         elif text in ('false', '0', 'no'):

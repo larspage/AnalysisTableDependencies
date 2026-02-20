@@ -162,5 +162,4 @@ class ConfigManager:
             objects_file=Path('objects.xml'),
             table_dependencies_file=Path('table_deps.xml'),
             object_dependencies_file=Path('object_deps.xml')
-        )</content>
-</xai:function_call">The config.py file has been created successfully.
+        )

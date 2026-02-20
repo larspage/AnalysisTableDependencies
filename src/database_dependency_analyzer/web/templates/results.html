@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Analysis Results - Database Dependency Analyzer</title>
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.13.7/css/jquery.dataTables.min.css">
     <style>
         * {
             margin: 0;
@@ -253,6 +254,32 @@
             color: #eab308;
         }
         
+        /* Column filter input styles */
+        .column-filter {
+            width: 100%;
+            padding: 6px 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid #475569;
+            border-radius: 6px;
+            color: #e2e8f0;
+            font-size: 0.85rem;
+            transition: all 0.2s ease;
+        }
+        
+        .column-filter:focus {
+            outline: none;
+            border-color: #00d4ff;
+            background: rgba(255, 255, 255, 0.08);
+        }
+        
+        .column-filter::placeholder {
+            color: #64748b;
+        }
+        
+        #filter-row th {
+            padding: 8px 12px;
+        }
+        
         @media (max-width: 768px) {
             header {
                 flex-direction: column;
@@ -276,6 +303,14 @@
     </style>
 </head>
 <body>
+    <nav style="background: rgba(0, 0, 0, 0.3); padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255, 255, 255, 0.1);">
+        <div style="font-size: 1.2rem; font-weight: 600; color: #00d4ff;">📊 DB Dependency Analyzer</div>
+        <div style="display: flex; gap: 20px;">
+            <a href="/" style="color: #94a3b8; text-decoration: none; font-weight: 500;">New Analysis</a>
+            <a href="/saved-reports" style="color: #94a3b8; text-decoration: none; font-weight: 500;">Saved Reports</a>
+        </div>
+    </nav>
+    
     <header>
         <div class="header-left">
             <h1>Analysis Results</h1>
@@ -283,9 +318,25 @@
         </div>
         <div class="header-actions">
             <a href="/" class="btn btn-secondary">← New Analysis</a>
+            <button class="btn btn-secondary" id="save-report-btn" onclick="showSaveModal()">💾 Save Report</button>
             <a href="/session/{{ session_id }}/download" class="btn btn-primary">Download Report</a>
         </div>
     </header>
+    
+    <!-- Save Report Modal -->
+    <div id="save-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); z-index: 1000; justify-content: center; align-items: center;">
+        <div style="background: #1e293b; border-radius: 12px; padding: 30px; max-width: 400px; width: 90%; border: 1px solid rgba(255, 255, 255, 0.1);">
+            <h3 style="color: #e2e8f0; margin-bottom: 15px;">Save Report</h3>
+            <p style="color: #94a3b8; margin-bottom: 20px;">Give your report a name for easy reference later.</p>
+            <input type="text" id="report-name-input" placeholder="Enter report name..." style="width: 100%; padding: 12px; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 8px; color: #fff; font-size: 1rem; margin-bottom: 20px;">
+            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                <button class="btn btn-secondary" onclick="closeSaveModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="saveReport()">Save</button>
+            </div>
+            <div id="save-error" style="display: none; margin-top: 15px; padding: 10px; background: rgba(239, 68, 68, 0.2); border: 1px solid #ef4444; border-radius: 6px; color: #fca5a5; font-size: 0.9rem;"></div>
+            <div id="save-success" style="display: none; margin-top: 15px; padding: 10px; background: rgba(34, 197, 94, 0.2); border: 1px solid #22c55e; border-radius: 6px; color: #86efac; font-size: 0.9rem;"></div>
+        </div>
+    </div>
     
     <div class="container">
         <div class="stats-grid" id="stats-grid">
@@ -396,40 +447,92 @@
         
         function displayUsageTable(usage) {
             if (!usage || !usage.objects) {
-                document.getElementById('usage-container').innerHTML = 
+                document.getElementById('usage-container').innerHTML =
                     '<p style="color: #94a3b8;">No usage data available.</p>';
                 return;
             }
             
+            // Prepare data for DataTable
+            const data = usage.objects.map(obj => {
+                const statusClass = obj.is_used ? 'usage-active' : 'usage-inactive';
+                const statusText = obj.is_used ? 'Active' : 'Unused';
+                
+                // Build referenced by list
+                let referencedByList = '-';
+                if (obj.referenced_by && obj.referenced_by.length > 0) {
+                    referencedByList = obj.referenced_by.map(ref =>
+                        `${ref.object_name} (${ref.object_type})`
+                    ).join(', ');
+                }
+                
+                return [
+                    obj.name || obj.object_name,
+                    obj.object_type || '-',
+                    `<span class="usage-badge ${statusClass}">${statusText}</span>`,
+                    referencedByList,
+                    obj.dependency_count || 0
+                ];
+            });
+            
+            // Create HTML for DataTable with filter row
             let html = `
-                <table class="data-table">
+                <table id="usage-table" class="data-table display" style="width:100%">
                     <thead>
                         <tr>
                             <th>Object Name</th>
                             <th>Type</th>
                             <th>Status</th>
-                            <th>Dependencies</th>
+                            <th>Referenced By</th>
+                            <th>Count</th>
+                        </tr>
+                        <tr id="filter-row">
+                            <th><input type="text" id="filter-object-name" placeholder="Filter object name..." class="column-filter" /></th>
+                            <th><input type="text" id="filter-type" placeholder="Filter type..." class="column-filter" /></th>
+                            <th></th>
+                            <th></th>
+                            <th></th>
                         </tr>
                     </thead>
-                    <tbody>
+                </table>
             `;
             
-            usage.objects.forEach(obj => {
-                const statusClass = obj.is_used ? 'usage-active' : 'usage-inactive';
-                const statusText = obj.is_used ? 'Active' : 'Unused';
-                
-                html += `
-                    <tr>
-                        <td>${obj.name || obj.object_name}</td>
-                        <td>${obj.object_type || '-'}</td>
-                        <td><span class="usage-badge ${statusClass}">${statusText}</span></td>
-                        <td>${obj.dependency_count || 0}</td>
-                    </tr>
-                `;
-            });
-            
-            html += '</tbody></table>';
             document.getElementById('usage-container').innerHTML = html;
+            
+            // Initialize DataTable
+            $(document).ready(function() {
+                const table = $('#usage-table').DataTable({
+                    data: data,
+                    columns: [
+                        { title: "Object Name" },
+                        { title: "Type" },
+                        { title: "Status" },
+                        { title: "Referenced By" },
+                        { title: "Count" }
+                    ],
+                    pageLength: 25,
+                    lengthMenu: [10, 25, 50, 100],
+                    ordering: true,
+                    searching: true,
+                    paging: true,
+                    info: true,
+                    autoWidth: false,
+                    orderCellsTop: true,
+                    columnDefs: [
+                        { targets: [4], className: "dt-right" }
+                    ],
+                    initComplete: function() {
+                        // Apply type-ahead filtering for Object Name column
+                        $('#filter-object-name').on('keyup change clear', function() {
+                            table.column(0).search(this.value).draw();
+                        });
+                        
+                        // Apply type-ahead filtering for Type column
+                        $('#filter-type').on('keyup change clear', function() {
+                            table.column(1).search(this.value).draw();
+                        });
+                    }
+                });
+            });
         }
         
         function displayStatistics(stats) {
@@ -465,8 +568,78 @@
             document.getElementById('statistics-container').innerHTML = html;
         }
         
+        // Save Report Modal Functions
+        function showSaveModal() {
+            document.getElementById('save-modal').style.display = 'flex';
+            document.getElementById('report-name-input').focus();
+            document.getElementById('save-error').style.display = 'none';
+            document.getElementById('save-success').style.display = 'none';
+        }
+        
+        function closeSaveModal() {
+            document.getElementById('save-modal').style.display = 'none';
+            document.getElementById('report-name-input').value = '';
+        }
+        
+        async function saveReport() {
+            const nameInput = document.getElementById('report-name-input');
+            const errorDiv = document.getElementById('save-error');
+            const successDiv = document.getElementById('save-success');
+            const reportName = nameInput.value.trim();
+            
+            errorDiv.style.display = 'none';
+            successDiv.style.display = 'none';
+            
+            try {
+                const response = await fetch('/save-report', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        session_id: sessionId,
+                        name: reportName
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(data.error || 'Failed to save report');
+                }
+                
+                successDiv.textContent = '✓ ' + data.message;
+                successDiv.style.display = 'block';
+                
+                // Close modal after a short delay
+                setTimeout(() => {
+                    closeSaveModal();
+                }, 1500);
+                
+            } catch (error) {
+                errorDiv.textContent = error.message;
+                errorDiv.style.display = 'block';
+            }
+        }
+        
+        // Close modal when clicking outside
+        document.getElementById('save-modal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeSaveModal();
+            }
+        });
+        
+        // Save on Enter key
+        document.getElementById('report-name-input').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                saveReport();
+            }
+        });
+        
         // Initialize
         loadAnalysis();
     </script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
 </body>
 </html>

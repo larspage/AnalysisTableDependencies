@@ -326,20 +326,86 @@ class HTMLGenerator:
         return '''
             <section class="usage-table-section">
                 <h2>Table Usage Status</h2>
+                
+                <!-- Filter Controls -->
+                <div class="usage-table-filters">
+                    <div class="filter-row">
+                        <div class="filter-group-inline">
+                            <label for="usage-status-filter">Status:</label>
+                            <select id="usage-status-filter" class="usage-filter-select">
+                                <option value="all">All</option>
+                                <option value="used">Used Only</option>
+                                <option value="unused">Unused Only</option>
+                            </select>
+                        </div>
+                        
+                        <div class="filter-group-inline">
+                            <label>Object Types:</label>
+                            <div class="checkbox-group">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" class="usage-type-filter" data-type="Form" checked>
+                                    <span>Forms</span>
+                                </label>
+                                <label class="checkbox-label">
+                                    <input type="checkbox" class="usage-type-filter" data-type="Query" checked>
+                                    <span>Queries</span>
+                                </label>
+                                <label class="checkbox-label">
+                                    <input type="checkbox" class="usage-type-filter" data-type="Macro" checked>
+                                    <span>Macros</span>
+                                </label>
+                                <label class="checkbox-label">
+                                    <input type="checkbox" class="usage-type-filter" data-type="Report" checked>
+                                    <span>Reports</span>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="filter-group-inline search-group">
+                            <label for="usage-table-search">Search:</label>
+                            <input type="text" id="usage-table-search" class="usage-search-input" placeholder="Search table names...">
+                        </div>
+                    </div>
+                </div>
+                
                 <div class="usage-table-container">
-                    <table class="usage-table">
+                    <table class="usage-table" id="usage-table">
                         <thead>
                             <tr>
-                                <th>Status</th>
-                                <th>Table Name</th>
-                                <th>Referencing Objects</th>
-                                <th>Object Types</th>
+                                <th class="sortable" data-sort="status" role="button" tabindex="0" aria-sort="none">
+                                    <span class="header-content">
+                                        <span class="header-text">Status</span>
+                                        <span class="sort-indicator" aria-hidden="true"></span>
+                                    </span>
+                                </th>
+                                <th class="sortable" data-sort="name" role="button" tabindex="0" aria-sort="none">
+                                    <span class="header-content">
+                                        <span class="header-text">Table Name</span>
+                                        <span class="sort-indicator" aria-hidden="true"></span>
+                                    </span>
+                                </th>
+                                <th class="sortable" data-sort="references" role="button" tabindex="0" aria-sort="none">
+                                    <span class="header-content">
+                                        <span class="header-text">Referencing Objects</span>
+                                        <span class="sort-indicator" aria-hidden="true"></span>
+                                    </span>
+                                </th>
+                                <th class="sortable" data-sort="types" role="button" tabindex="0" aria-sort="none">
+                                    <span class="header-content">
+                                        <span class="header-text">Object Types</span>
+                                        <span class="sort-indicator" aria-hidden="true"></span>
+                                    </span>
+                                </th>
                             </tr>
                         </thead>
                         <tbody id="usage-table-body">
                             <!-- Rows will be inserted here -->
                         </tbody>
                     </table>
+                </div>
+                
+                <div class="usage-table-info">
+                    <span id="usage-table-count">Showing 0 tables</span>
                 </div>
             </section>
         '''
@@ -359,6 +425,17 @@ class HTMLGenerator:
                     <label><input type="checkbox" id="show-queries" checked> Queries</label>
                     <label><input type="checkbox" id="show-macros" checked> Macros</label>
                     <label><input type="checkbox" id="show-reports" checked> Reports</label>
+                </div>
+                <div class="diagram-legend">
+                    <span class="legend-title">Legend:</span>
+                    <span class="legend-item"><span class="legend-color" style="background: #2563eb;"></span> Tables</span>
+                    <span class="legend-item"><span class="legend-color" style="background: #f59e0b;"></span> Queries</span>
+                    <span class="legend-item"><span class="legend-color" style="background: #3b82f6;"></span> Forms</span>
+                    <span class="legend-item"><span class="legend-color" style="background: #dc2626;"></span> Macros</span>
+                    <span class="legend-item"><span class="legend-color" style="background: #16a34a;"></span> Reports</span>
+                    <span class="legend-separator">|</span>
+                    <span class="legend-item"><span class="legend-line active"></span> Active Link</span>
+                    <span class="legend-item"><span class="legend-line inactive"></span> Inactive Link</span>
                 </div>
                 <div id="dependency-diagram" class="dependency-diagram">
                     <!-- SVG diagram rendered here -->
@@ -1281,6 +1358,211 @@ body {
     color: var(--report-color);
 }
 
+/* Usage Table Filter Controls */
+.usage-table-filters {
+    margin-bottom: 1rem;
+    padding: 1rem;
+    background: #f9fafb;
+    border-radius: var(--border-radius);
+    border: 1px solid #e5e7eb;
+}
+
+.filter-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+    align-items: center;
+}
+
+.filter-group-inline {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.filter-group-inline > label {
+    font-weight: 500;
+    color: #374151;
+    white-space: nowrap;
+}
+
+.usage-filter-select {
+    padding: 0.5rem 0.75rem;
+    border: 1px solid #d1d5db;
+    border-radius: var(--border-radius);
+    background: white;
+    font-size: var(--font-size-base);
+    cursor: pointer;
+    min-width: 120px;
+}
+
+.usage-filter-select:hover {
+    border-color: var(--primary-color);
+}
+
+.usage-filter-select:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.checkbox-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    cursor: pointer;
+    font-size: 0.9rem;
+    color: #374151;
+}
+
+.checkbox-label input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+    accent-color: var(--primary-color);
+}
+
+.checkbox-label:hover span {
+    color: var(--primary-color);
+}
+
+.search-group {
+    flex: 1;
+    min-width: 200px;
+}
+
+.usage-search-input {
+    flex: 1;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid #d1d5db;
+    border-radius: var(--border-radius);
+    font-size: var(--font-size-base);
+    min-width: 150px;
+}
+
+.usage-search-input:hover {
+    border-color: var(--primary-color);
+}
+
+.usage-search-input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.usage-search-input::placeholder {
+    color: #9ca3af;
+}
+
+/* Sortable Column Headers */
+.usage-table th.sortable {
+    cursor: pointer;
+    user-select: none;
+    transition: background-color 0.2s ease;
+    position: relative;
+}
+
+.usage-table th.sortable:hover {
+    background: #e5e7eb;
+}
+
+.usage-table th.sortable:focus {
+    outline: none;
+    background: #e5e7eb;
+    box-shadow: inset 0 0 0 2px var(--primary-color);
+}
+
+.usage-table th.sortable:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: -2px;
+}
+
+.header-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+}
+
+.header-text {
+    flex: 1;
+}
+
+.sort-indicator {
+    display: inline-block;
+    width: 1rem;
+    text-align: center;
+    font-size: 0.75rem;
+    color: #9ca3af;
+    transition: color 0.2s ease;
+}
+
+.sort-indicator::after {
+    content: '⇅';
+}
+
+.usage-table th.sortable[aria-sort="ascending"] .sort-indicator::after {
+    content: '▲';
+    color: var(--primary-color);
+}
+
+.usage-table th.sortable[aria-sort="descending"] .sort-indicator::after {
+    content: '▼';
+    color: var(--primary-color);
+}
+
+.usage-table th.sortable[aria-sort="ascending"],
+.usage-table th.sortable[aria-sort="descending"] {
+    background: #e0e7ff;
+}
+
+.usage-table th.sortable[aria-sort="ascending"] .sort-indicator,
+.usage-table th.sortable[aria-sort="descending"] .sort-indicator {
+    color: var(--primary-color);
+}
+
+/* Usage Table Info */
+.usage-table-info {
+    margin-top: 0.75rem;
+    padding: 0.5rem;
+    font-size: 0.875rem;
+    color: #6b7280;
+    text-align: right;
+}
+
+/* Responsive adjustments for filters */
+@media (max-width: 768px) {
+    .filter-row {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 1rem;
+    }
+    
+    .filter-group-inline {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+    
+    .checkbox-group {
+        flex-wrap: wrap;
+    }
+    
+    .search-group {
+        width: 100%;
+    }
+    
+    .usage-search-input {
+        width: 100%;
+    }
+}
+
 /* Dependency Diagram Styles */
 .dependency-diagram-section {
     margin: 2rem 0;
@@ -1355,6 +1637,69 @@ body {
     padding: 2rem;
     color: #6b7280;
     font-style: italic;
+}
+
+/* Diagram Legend Styles */
+.diagram-legend {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.75rem;
+    background: #f1f5f9;
+    border-radius: var(--border-radius);
+    margin-bottom: 1rem;
+    font-size: 0.8rem;
+}
+
+.diagram-legend .legend-title {
+    font-weight: 600;
+    color: #374151;
+}
+
+.diagram-legend .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.diagram-legend .legend-color {
+    width: 14px;
+    height: 14px;
+    border-radius: 3px;
+}
+
+.diagram-legend .legend-line {
+    width: 24px;
+    height: 3px;
+    border-radius: 2px;
+}
+
+.diagram-legend .legend-line.active {
+    background: #16a34a;
+}
+
+.diagram-legend .legend-line.inactive {
+    background: #dc2626;
+    background: repeating-linear-gradient(
+        90deg,
+        #dc2626,
+        #dc2626 4px,
+        transparent 4px,
+        transparent 8px
+    );
+}
+
+.diagram-legend .legend-separator {
+    color: #d1d5db;
+    margin: 0 0.25rem;
+}
+
+/* Column Headers in Diagram */
+.diagram-column-header {
+    font-size: 12px;
+    font-weight: 600;
+    fill: #374151;
 }
 """
 
@@ -1623,7 +1968,7 @@ body {
                 const sortedTables = this.sortTables(filteredTables);
 
                 // CSV header
-                let csv = 'Table Name,Status,References,Object Types\n';
+                let csv = 'Table Name,Status,References,Object Types\\n';
 
                 // CSV rows
                 sortedTables.forEach(table => {
@@ -1642,7 +1987,7 @@ body {
                     // Escape commas and quotes in table name
                     const escapedName = table.table_name.replace(/"/g, '""');
 
-                    csv += `"${escapedName}",${status},${refs},"${types}"\n`;
+                    csv += `"${escapedName}",${status},${refs},"${types}"\\n`;
                 });
 
                 // Download CSV
@@ -1812,11 +2157,205 @@ body {
 
             // ========== Usage Table Methods ==========
 
+            initUsageTable() {
+                // Initialize usage table state
+                this.usageTableState = {
+                    sortColumn: null,
+                    sortDirection: 'none', // 'none', 'ascending', 'descending'
+                    statusFilter: 'all',   // 'all', 'used', 'unused'
+                    typeFilters: ['Form', 'Query', 'Macro', 'Report'],
+                    searchTerm: ''
+                };
+
+                // Set up event listeners for sorting
+                document.querySelectorAll('.usage-table th.sortable').forEach(header => {
+                    header.addEventListener('click', (e) => {
+                        this.handleUsageTableSort(e.currentTarget.dataset.sort);
+                    });
+                    header.addEventListener('keydown', (e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            this.handleUsageTableSort(e.currentTarget.dataset.sort);
+                        }
+                    });
+                });
+
+                // Set up event listeners for filters
+                const statusFilter = document.getElementById('usage-status-filter');
+                if (statusFilter) {
+                    statusFilter.addEventListener('change', (e) => {
+                        this.usageTableState.statusFilter = e.target.value;
+                        this.updateUsageTable();
+                    });
+                }
+
+                // Object type filters
+                document.querySelectorAll('.usage-type-filter').forEach(checkbox => {
+                    checkbox.addEventListener('change', (e) => {
+                        const type = e.target.dataset.type;
+                        if (e.target.checked) {
+                            if (!this.usageTableState.typeFilters.includes(type)) {
+                                this.usageTableState.typeFilters.push(type);
+                            }
+                        } else {
+                            this.usageTableState.typeFilters = this.usageTableState.typeFilters.filter(t => t !== type);
+                        }
+                        this.updateUsageTable();
+                    });
+                });
+
+                // Search input
+                const searchInput = document.getElementById('usage-table-search');
+                if (searchInput) {
+                    searchInput.addEventListener('input', (e) => {
+                        this.usageTableState.searchTerm = e.target.value.toLowerCase();
+                        this.updateUsageTable();
+                    });
+                }
+
+                // Initial render
+                this.renderUsageTable();
+            }
+
+            handleUsageTableSort(column) {
+                const currentColumn = this.usageTableState.sortColumn;
+                const currentDirection = this.usageTableState.sortDirection;
+
+                // Determine new sort direction
+                let newDirection;
+                if (currentColumn !== column) {
+                    // New column, start with ascending
+                    newDirection = 'ascending';
+                } else {
+                    // Same column, cycle through: none -> ascending -> descending -> none
+                    if (currentDirection === 'none') {
+                        newDirection = 'ascending';
+                    } else if (currentDirection === 'ascending') {
+                        newDirection = 'descending';
+                    } else {
+                        newDirection = 'none';
+                    }
+                }
+
+                // Update state
+                this.usageTableState.sortColumn = newDirection === 'none' ? null : column;
+                this.usageTableState.sortDirection = newDirection;
+
+                // Update header aria-sort attributes
+                document.querySelectorAll('.usage-table th.sortable').forEach(header => {
+                    if (header.dataset.sort === column) {
+                        header.setAttribute('aria-sort', newDirection);
+                    } else {
+                        header.setAttribute('aria-sort', 'none');
+                    }
+                });
+
+                // Re-render table
+                this.updateUsageTable();
+            }
+
+            filterUsageTables() {
+                return Object.values(this.data.tables).filter(table => {
+                    // Filter by status
+                    if (this.usageTableState.statusFilter === 'used' && !table.is_used) return false;
+                    if (this.usageTableState.statusFilter === 'unused' && table.is_used) return false;
+
+                    // Filter by object types (show tables that have at least one matching type, or unused tables)
+                    if (table.referencing_objects.length > 0) {
+                        const hasMatchingType = table.referencing_objects.some(obj =>
+                            this.usageTableState.typeFilters.includes(obj.object_type)
+                        );
+                        if (!hasMatchingType) return false;
+                    }
+
+                    // Filter by search term
+                    if (this.usageTableState.searchTerm) {
+                        const searchLower = this.usageTableState.searchTerm;
+                        const nameMatch = table.table_name.toLowerCase().includes(searchLower);
+                        if (!nameMatch) return false;
+                    }
+
+                    return true;
+                });
+            }
+
+            sortUsageTables(tables) {
+                const { sortColumn, sortDirection } = this.usageTableState;
+
+                if (!sortColumn || sortDirection === 'none') {
+                    // Default sort by table name
+                    return tables.sort((a, b) => a.table_name.localeCompare(b.table_name));
+                }
+
+                const multiplier = sortDirection === 'ascending' ? 1 : -1;
+
+                return tables.sort((a, b) => {
+                    switch (sortColumn) {
+                        case 'status':
+                            // Used tables first when ascending
+                            if (a.is_used === b.is_used) {
+                                return a.table_name.localeCompare(b.table_name);
+                            }
+                            return (a.is_used ? -1 : 1) * multiplier;
+
+                        case 'name':
+                            return a.table_name.localeCompare(b.table_name) * multiplier;
+
+                        case 'references':
+                            const aRefs = a.referencing_objects.length;
+                            const bRefs = b.referencing_objects.length;
+                            if (aRefs === bRefs) {
+                                return a.table_name.localeCompare(b.table_name);
+                            }
+                            return (aRefs - bRefs) * multiplier;
+
+                        case 'types':
+                            // Sort by total count of object types
+                            const aTypes = new Set(a.referencing_objects.map(o => o.object_type)).size;
+                            const bTypes = new Set(b.referencing_objects.map(o => o.object_type)).size;
+                            if (aTypes === bTypes) {
+                                return a.table_name.localeCompare(b.table_name);
+                            }
+                            return (aTypes - bTypes) * multiplier;
+
+                        default:
+                            return a.table_name.localeCompare(b.table_name);
+                    }
+                });
+            }
+
+            updateUsageTable() {
+                const filteredTables = this.filterUsageTables();
+                const sortedTables = this.sortUsageTables(filteredTables);
+                this.renderUsageTableRows(sortedTables);
+
+                // Update count display
+                const countEl = document.getElementById('usage-table-count');
+                if (countEl) {
+                    const total = Object.keys(this.data.tables).length;
+                    const showing = sortedTables.length;
+                    countEl.textContent = showing === total
+                        ? `Showing ${showing} tables`
+                        : `Showing ${showing} of ${total} tables`;
+                }
+            }
+
             renderUsageTable() {
+                const tables = Object.values(this.data.tables);
+                const sortedTables = this.sortUsageTables(tables);
+                this.renderUsageTableRows(sortedTables);
+
+                // Update count display
+                const countEl = document.getElementById('usage-table-count');
+                if (countEl) {
+                    countEl.textContent = `Showing ${sortedTables.length} tables`;
+                }
+            }
+
+            renderUsageTableRows(tables) {
                 const tbody = document.getElementById('usage-table-body');
                 if (!tbody) return;
 
-                const tables = Object.values(this.data.tables);
                 tbody.innerHTML = '';
 
                 tables.forEach(table => {
@@ -1917,9 +2456,17 @@ body {
 
             buildDiagramNodes() {
                 const nodes = [];
-                let yOffset = 30;
+                
+                // Column configuration: Tables → Queries → Forms/Macros/Reports
+                const columns = {
+                    table: { x: 100, yOffset: 60, nodeHeight: 40 },
+                    query: { x: 350, yOffset: 60, nodeHeight: 35 },
+                    form: { x: 550, yOffset: 60, nodeHeight: 35 },
+                    macro: { x: 750, yOffset: 60, nodeHeight: 35 },
+                    report: { x: 950, yOffset: 60, nodeHeight: 35 }
+                };
 
-                // Add tables
+                // Add tables (Column 1)
                 if (this.diagramFilters.tables) {
                     Object.values(this.data.tables).forEach(table => {
                         nodes.push({
@@ -1927,42 +2474,80 @@ body {
                             label: table.table_name,
                             type: 'table',
                             status: table.is_used ? 'used' : 'unused',
-                            x: 100,
-                            y: yOffset
+                            x: columns.table.x,
+                            y: columns.table.yOffset
                         });
-                        yOffset += 50;
+                        columns.table.yOffset += columns.table.nodeHeight;
                     });
                 }
 
-                // Add objects (Forms, Queries, Macros, Reports)
-                const objectTypes = ['Form', 'Query', 'Macro', 'Report'];
-                const objectXPositions = {
-                    'Form': 350,
-                    'Query': 500,
-                    'Macro': 650,
-                    'Report': 800
-                };
-
-                objectTypes.forEach(objType => {
-                    if (!this.diagramFilters[objType.toLowerCase() + 's']) return;
-
-                    const filterType = objType.toLowerCase() + 's';
-                    if (!this.diagramFilters[filterType]) return;
-
+                // Add queries (Column 2)
+                if (this.diagramFilters.queries) {
                     Object.values(this.data.objects).forEach(obj => {
-                        if (obj.object_type === objType) {
+                        if (obj.object_type === 'Query') {
                             nodes.push({
-                                id: `${objType.toLowerCase()}-${obj.object_id}`,
+                                id: `query-${obj.object_id}`,
                                 label: obj.object_name,
-                                type: objType.toLowerCase(),
+                                type: 'query',
                                 status: 'active',
-                                x: objectXPositions[objType],
-                                y: yOffset
+                                x: columns.query.x,
+                                y: columns.query.yOffset
                             });
-                            yOffset += 40;
+                            columns.query.yOffset += columns.query.nodeHeight;
                         }
                     });
-                });
+                }
+
+                // Add forms (Column 3)
+                if (this.diagramFilters.forms) {
+                    Object.values(this.data.objects).forEach(obj => {
+                        if (obj.object_type === 'Form') {
+                            nodes.push({
+                                id: `form-${obj.object_id}`,
+                                label: obj.object_name,
+                                type: 'form',
+                                status: 'active',
+                                x: columns.form.x,
+                                y: columns.form.yOffset
+                            });
+                            columns.form.yOffset += columns.form.nodeHeight;
+                        }
+                    });
+                }
+
+                // Add macros (Column 4)
+                if (this.diagramFilters.macros) {
+                    Object.values(this.data.objects).forEach(obj => {
+                        if (obj.object_type === 'Macro') {
+                            nodes.push({
+                                id: `macro-${obj.object_id}`,
+                                label: obj.object_name,
+                                type: 'macro',
+                                status: 'active',
+                                x: columns.macro.x,
+                                y: columns.macro.yOffset
+                            });
+                            columns.macro.yOffset += columns.macro.nodeHeight;
+                        }
+                    });
+                }
+
+                // Add reports (Column 5)
+                if (this.diagramFilters.reports) {
+                    Object.values(this.data.objects).forEach(obj => {
+                        if (obj.object_type === 'Report') {
+                            nodes.push({
+                                id: `report-${obj.object_id}`,
+                                label: obj.object_name,
+                                type: 'report',
+                                status: 'active',
+                                x: columns.report.x,
+                                y: columns.report.yOffset
+                            });
+                            columns.report.yOffset += columns.report.nodeHeight;
+                        }
+                    });
+                }
 
                 return nodes;
             }
@@ -1970,7 +2555,7 @@ body {
             buildDiagramLinks() {
                 const links = [];
 
-                // Table → Object links
+                // Table → Object links (from table.referencing_objects)
                 Object.values(this.data.tables).forEach(table => {
                     table.referencing_objects.forEach(ref => {
                         const targetType = ref.object_type.toLowerCase();
@@ -1988,26 +2573,63 @@ body {
 
             createDiagramSVG(nodes, links) {
                 const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-                const width = 900;
-                const height = Math.max(250, nodes.length * 45 + 60);
-                svg.setAttribute('width', width.toString());
+                
+                // Calculate dimensions based on nodes
+                const maxY = Math.max(...nodes.map(n => n.y), 200);
+                const width = 1100;
+                const height = maxY + 60;
+                
+                svg.setAttribute('width', '100%');
                 svg.setAttribute('height', height.toString());
                 svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
+                svg.style.minWidth = width + 'px';
 
-                // Draw links first (behind nodes)
+                // Add column headers
+                const columnHeaders = [
+                    { x: 100, label: 'Tables', show: this.diagramFilters.tables },
+                    { x: 350, label: 'Queries', show: this.diagramFilters.queries },
+                    { x: 550, label: 'Forms', show: this.diagramFilters.forms },
+                    { x: 750, label: 'Macros', show: this.diagramFilters.macros },
+                    { x: 950, label: 'Reports', show: this.diagramFilters.reports }
+                ];
+
+                columnHeaders.forEach(header => {
+                    if (header.show) {
+                        const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                        text.setAttribute('x', header.x.toString());
+                        text.setAttribute('y', '25');
+                        text.setAttribute('text-anchor', 'middle');
+                        text.setAttribute('class', 'diagram-column-header');
+                        text.textContent = header.label;
+                        svg.appendChild(text);
+                    }
+                });
+
+                // Draw curved links (behind nodes)
                 links.forEach(link => {
                     const source = nodes.find(n => n.id === link.source);
                     const target = nodes.find(n => n.id === link.target);
                     if (source && target) {
-                        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-                        line.setAttribute('x1', source.x.toString());
-                        line.setAttribute('y1', source.y.toString());
-                        line.setAttribute('x2', target.x.toString());
-                        line.setAttribute('y2', target.y.toString());
-                        line.setAttribute('stroke', link.active ? '#16a34a' : '#dc2626');
-                        line.setAttribute('stroke-width', '2');
-                        line.setAttribute('class', link.active ? 'diagram-link active' : 'diagram-link inactive');
-                        svg.appendChild(line);
+                        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                        
+                        // Calculate control points for bezier curve
+                        const dx = target.x - source.x;
+                        const controlOffset = Math.min(dx * 0.4, 80);
+                        
+                        const d = `M ${source.x + 60} ${source.y}
+                                   C ${source.x + 60 + controlOffset} ${source.y},
+                                     ${target.x - 60 - controlOffset} ${target.y},
+                                     ${target.x - 60} ${target.y}`;
+                        
+                        path.setAttribute('d', d);
+                        path.setAttribute('fill', 'none');
+                        path.setAttribute('stroke', link.active ? '#16a34a' : '#dc2626');
+                        path.setAttribute('stroke-width', '2');
+                        path.setAttribute('class', link.active ? 'diagram-link active' : 'diagram-link inactive');
+                        if (!link.active) {
+                            path.setAttribute('stroke-dasharray', '5,5');
+                        }
+                        svg.appendChild(path);
                     }
                 });
 
@@ -2015,32 +2637,46 @@ body {
                 nodes.forEach(node => {
                     const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
                     g.setAttribute('class', 'diagram-node');
+                    g.setAttribute('data-node-id', node.id);
 
-                    // Node rectangle
+                    // Node rectangle with fixed width for consistency
                     const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-                    const textWidth = Math.max(100, node.label.length * 8);
-                    rect.setAttribute('x', (node.x - textWidth / 2).toString());
+                    const nodeWidth = 120;
+                    rect.setAttribute('x', (node.x - nodeWidth / 2).toString());
                     rect.setAttribute('y', (node.y - 12).toString());
-                    rect.setAttribute('width', textWidth.toString());
+                    rect.setAttribute('width', nodeWidth.toString());
                     rect.setAttribute('height', '24');
                     rect.setAttribute('rx', '4');
                     rect.setAttribute('fill', this.getDiagramNodeColor(node.type));
+                    
+                    // Add border for unused tables
                     if (node.status === 'unused') {
                         rect.setAttribute('stroke', '#dc2626');
+                        rect.setAttribute('stroke-width', '3');
+                    } else if (node.type === 'table' && node.status === 'used') {
+                        rect.setAttribute('stroke', '#16a34a');
                         rect.setAttribute('stroke-width', '2');
                     }
                     g.appendChild(rect);
 
-                    // Node label
+                    // Node label (truncated if too long)
                     const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
                     text.setAttribute('x', node.x.toString());
                     text.setAttribute('y', (node.y + 4).toString());
                     text.setAttribute('text-anchor', 'middle');
                     text.setAttribute('fill', 'white');
-                    text.setAttribute('font-size', '11');
+                    text.setAttribute('font-size', '10');
                     text.setAttribute('font-weight', '500');
-                    text.textContent = node.label.length > 15 ? node.label.substring(0, 14) + '…' : node.label;
+                    const maxLabelLength = 14;
+                    text.textContent = node.label.length > maxLabelLength
+                        ? node.label.substring(0, maxLabelLength - 1) + '…'
+                        : node.label;
                     g.appendChild(text);
+
+                    // Add tooltip title
+                    const title = document.createElementNS('http://www.w3.org/2000/svg', 'title');
+                    title.textContent = `${node.type.charAt(0).toUpperCase() + node.type.slice(1)}: ${node.label}`;
+                    g.appendChild(title);
 
                     svg.appendChild(g);
                 });
@@ -2063,8 +2699,8 @@ body {
         // Initialize when DOM is loaded
         document.addEventListener('DOMContentLoaded', () => {
             const controller = new ReportController();
-            // Initialize usage table
-            controller.renderUsageTable();
+            // Initialize usage table with sorting and filtering
+            controller.initUsageTable();
             // Initialize dependency diagram
             controller.initDependencyDiagram();
         });

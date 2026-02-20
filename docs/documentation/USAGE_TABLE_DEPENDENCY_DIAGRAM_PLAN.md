@@ -1,11 +1,22 @@
 # Usage Table & Dependency Diagram Implementation Plan
 
+## Implementation Status
+
+| Feature | Status | Implementation Date |
+|---------|--------|---------------------|
+| Usage Status Table | ✅ **IMPLEMENTED** | 2026-02-02 |
+| Dependency Diagram | ✅ **IMPLEMENTED** | 2026-02-02 |
+
+---
+
 ## Overview
 
-Based on user feedback, this plan focuses on two key components:
+Based on user feedback, this plan focused on two key components:
 
-1. **Usage Status Table** - A clear table showing each table and whether it's used
-2. **Dependency Diagram** - A visualization showing how tables are incorporated into the Access application
+1. **Usage Status Table** - ✅ A clear table showing each table and whether it's used
+2. **Dependency Diagram** - ✅ A visualization showing how tables are incorporated into the Access application
+
+---
 
 ## Data Model Understanding
 
@@ -17,20 +28,27 @@ The current data models provide:
 
 ---
 
-## Component 1: Usage Status Table
+## Component 1: Usage Status Table ✅ IMPLEMENTED
 
 ### Purpose
 Display each table with its usage status (Used/Unused) and the objects that reference it.
 
-### Implementation
+### Implementation Details
 
-**New Method in [`html_generator.py`](src/database_dependency_analyzer/generators/html_generator.py):**
-```python
-def _generate_usage_table_section(self) -> str:
-    """Generate the usage status table section."""
-```
+**Location:** [`html_generator.py`](../../src/database_dependency_analyzer/generators/html_generator.py)
 
-### HTML Structure
+**Method:** `_generate_usage_table_section()` (lines 320-345)
+
+### Features Implemented
+- ✅ Status column with color-coded indicators (green for used, red for unused)
+- ✅ Table name column
+- ✅ Referencing objects column with object type badges
+- ✅ Object types summary column with counts
+- ✅ Row highlighting based on usage status
+- ✅ Responsive table container with horizontal scroll
+- ✅ JavaScript-powered dynamic rendering via `renderUsageTable()` method
+
+### HTML Structure (Implemented)
 ```html
 <section class="usage-table-section">
     <h2>Table Usage Status</h2>
@@ -52,139 +70,23 @@ def _generate_usage_table_section(self) -> str:
 </section>
 ```
 
-### JavaScript Functions
-```javascript
-renderUsageTable() {
-    const tables = Object.values(this.data.tables);
-    const tbody = document.getElementById('usage-table-body');
-    tbody.innerHTML = '';
-    
-    tables.forEach(table => {
-        const row = this.createUsageTableRow(table);
-        tbody.appendChild(row);
-    });
-}
+### CSS Styles (Implemented)
+- `.usage-table-section` - Section container with margin
+- `.usage-table-container` - Overflow container for responsiveness
+- `.usage-table` - Full-width table with collapsed borders
+- `.row-used` - Green background (#f0fdf4) for used tables
+- `.row-unused` - Red background (#fef2f2) for unused tables
+- `.status-indicator` - Color-coded status dots
+- `.object-type-badge` - Styled badges for object types
 
-createUsageTableRow(table) {
-    const row = document.createElement('tr');
-    row.className = table.is_used ? 'row-used' : 'row-unused';
-    
-    // Status column
-    const statusCell = document.createElement('td');
-    statusCell.innerHTML = table.is_used 
-        ? '<span class="status-indicator used">●</span> Used'
-        : '<span class="status-indicator unused">●</span> Unused';
-    
-    // Table name column
-    const nameCell = document.createElement('td');
-    nameCell.textContent = table.table_name;
-    
-    // Referencing objects column
-    const refsCell = document.createElement('td');
-    if (table.referencing_objects.length > 0) {
-        const objectList = document.createElement('ul');
-        objectList.className = 'object-list';
-        table.referencing_objects.forEach(obj => {
-            const item = document.createElement('li');
-            item.innerHTML = `<span class="object-type-badge ${obj.object_type.toLowerCase()}">${obj.object_type}</span> ${obj.object_name}`;
-            objectList.appendChild(item);
-        });
-        refsCell.appendChild(objectList);
-    } else {
-        refsCell.textContent = '—';
-    }
-    
-    // Object types summary column
-    const typesCell = document.createElement('td');
-    const typeCounts = {};
-    table.referencing_objects.forEach(obj => {
-        typeCounts[obj.object_type] = (typeCounts[obj.object_type] || 0) + 1;
-    });
-    Object.entries(typeCounts).forEach(([type, count]) => {
-        const badge = document.createElement('span');
-        badge.className = `type-count-badge ${type.toLowerCase()}`;
-        badge.textContent = `${type}: ${count}`;
-        typesCell.appendChild(badge);
-    });
-    
-    row.appendChild(statusCell);
-    row.appendChild(nameCell);
-    row.appendChild(refsCell);
-    row.appendChild(typesCell);
-    
-    return row;
-}
-```
-
-### CSS Styles
-```css
-.usage-table-section {
-    margin: 2rem 0;
-}
-
-.usage-table {
-    width: 100%;
-    border-collapse: collapse;
-}
-
-.usage-table th,
-.usage-table td {
-    padding: 0.75rem;
-    text-align: left;
-    border-bottom: 1px solid #e5e7eb;
-}
-
-.usage-table th {
-    background: #f9fafb;
-    font-weight: 600;
-}
-
-.row-used {
-    background: #f0fdf4;
-}
-
-.row-unused {
-    background: #fef2f2;
-}
-
-.status-indicator {
-    margin-right: 0.5rem;
-}
-
-.status-indicator.used { color: #16a34a; }
-.status-indicator.unused { color: #dc2626; }
-
-.object-list {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-}
-
-.object-list li {
-    padding: 0.25rem 0;
-}
-
-.object-type-badge {
-    display: inline-block;
-    padding: 0.125rem 0.5rem;
-    border-radius: 0.25rem;
-    font-size: 0.75rem;
-    font-weight: 500;
-    margin-right: 0.5rem;
-}
-
-.type-count-badge {
-    display: inline-block;
-    padding: 0.25rem 0.5rem;
-    border-radius: 0.25rem;
-    font-size: 0.75rem;
-    margin-right: 0.25rem;
-}
-```
+### JavaScript Functions (Implemented)
+- `renderUsageTable()` - Main rendering function
+- `createUsageTableRow(table)` - Creates individual table rows
+- Dynamic filtering integration with main report filters
 
 ---
 
-## Component 2: Dependency Diagram
+## Component 2: Dependency Diagram ✅ IMPLEMENTED
 
 ### Purpose
 Visualize how tables are incorporated into the Access application:
@@ -193,39 +95,68 @@ Visualize how tables are incorporated into the Access application:
 - Table → Macro → Form (table used in macro, macro used in form)
 - And other relationship chains
 
-### Implementation
+### Implementation Details
 
-**New Method in [`html_generator.py`](src/database_dependency_analyzer/generators/html_generator.py):**
-```python
-def _generate_dependency_diagram_section(self) -> str:
-    """Generate the dependency diagram section."""
-```
+**Location:** [`html_generator.py`](../../src/database_dependency_analyzer/generators/html_generator.py)
 
-### HTML Structure
+**Method:** `_generate_dependency_diagram_section()` (lines 347-378)
+
+### Features Implemented
+
+#### Column-Based Layout
+- ✅ **Column 1 (x=100):** Tables
+- ✅ **Column 2 (x=350):** Queries
+- ✅ **Column 3 (x=550):** Forms
+- ✅ **Column 4 (x=750):** Macros
+- ✅ **Column 5 (x=950):** Reports
+
+#### Visual Elements
+- ✅ **Curved Bezier Path Connections** - Smooth curved lines connecting related nodes
+- ✅ **Color-Coded Nodes:**
+  - Tables: Blue (#2563eb)
+  - Queries: Orange (#f59e0b)
+  - Forms: Blue (#3b82f6)
+  - Macros: Red (#dc2626)
+  - Reports: Green (#16a34a)
+- ✅ **Link Styling:**
+  - Active links: Solid green (#16a34a)
+  - Inactive links: Dashed red (#dc2626)
+- ✅ **Node Status Indicators:**
+  - Used tables: Green border
+  - Unused tables: Red border (3px)
+
+#### Interactive Features
+- ✅ **Filter Controls** - Checkboxes to show/hide each node type:
+  - Tables
+  - Forms
+  - Queries
+  - Macros
+  - Reports
+- ✅ **Visual Legend** - Shows color coding for all node types and link states
+- ✅ **Dynamic SVG Rendering** - Diagram updates when filters change
+- ✅ **Responsive Container** - Horizontal scroll for large diagrams
+
+### HTML Structure (Implemented)
 ```html
 <section class="dependency-diagram-section">
     <h2>Table Dependency Diagram</h2>
     <div class="diagram-controls">
-        <label>
-            <input type="checkbox" id="show-tables" checked>
-            Show Tables
-        </label>
-        <label>
-            <input type="checkbox" id="show-forms" checked>
-            Show Forms
-        </label>
-        <label>
-            <input type="checkbox" id="show-queries" checked>
-            Show Queries
-        </label>
-        <label>
-            <input type="checkbox" id="show-macros" checked>
-            Show Macros
-        </label>
-        <label>
-            <input type="checkbox" id="show-reports" checked>
-            Show Reports
-        </label>
+        <label><input type="checkbox" id="show-tables" checked> Tables</label>
+        <label><input type="checkbox" id="show-forms" checked> Forms</label>
+        <label><input type="checkbox" id="show-queries" checked> Queries</label>
+        <label><input type="checkbox" id="show-macros" checked> Macros</label>
+        <label><input type="checkbox" id="show-reports" checked> Reports</label>
+    </div>
+    <div class="diagram-legend">
+        <span class="legend-title">Legend:</span>
+        <span class="legend-item"><span class="legend-color" style="background: #2563eb;"></span> Tables</span>
+        <span class="legend-item"><span class="legend-color" style="background: #f59e0b;"></span> Queries</span>
+        <span class="legend-item"><span class="legend-color" style="background: #3b82f6;"></span> Forms</span>
+        <span class="legend-item"><span class="legend-color" style="background: #dc2626;"></span> Macros</span>
+        <span class="legend-item"><span class="legend-color" style="background: #16a34a;"></span> Reports</span>
+        <span class="legend-separator">|</span>
+        <span class="legend-item"><span class="legend-line active"></span> Active Link</span>
+        <span class="legend-item"><span class="legend-line inactive"></span> Inactive Link</span>
     </div>
     <div id="dependency-diagram" class="dependency-diagram">
         <!-- SVG diagram rendered here -->
@@ -233,258 +164,37 @@ def _generate_dependency_diagram_section(self) -> str:
 </section>
 ```
 
-### JavaScript: Dependency Graph Renderer
+### JavaScript Functions (Implemented)
+- `initDependencyDiagram()` - Initializes filters and renders diagram
+- `renderDependencyDiagram()` - Main rendering function
+- `buildDiagramNodes()` - Creates node objects with column positions
+- `buildDiagramLinks()` - Creates link objects from table references
+- `createDiagramSVG(nodes, links)` - Generates SVG with:
+  - Column headers
+  - Curved Bezier path connections
+  - Color-coded node rectangles
+  - Truncated labels for long names
+- `getDiagramNodeColor(type)` - Returns color for node type
 
+### SVG Rendering Details
 ```javascript
-class DependencyDiagramRenderer {
-    constructor(containerId, data) {
-        this.container = document.getElementById(containerId);
-        this.data = data;
-        this.filters = {
-            tables: true,
-            forms: true,
-            queries: true,
-            macros: true,
-            reports: true
-        };
-        this.initializeFilters();
-    }
-    
-    initializeFilters() {
-        document.querySelectorAll('.diagram-controls input[type="checkbox"]').forEach(checkbox => {
-            checkbox.addEventListener('change', (e) => {
-                this.filters[e.target.id.replace('show-', '')] = e.target.checked;
-                this.render();
-            });
-        });
-    }
-    
-    render() {
-        this.container.innerHTML = '';
-        
-        const nodes = this.buildNodes();
-        const links = this.buildLinks();
-        
-        if (nodes.length === 0) {
-            this.container.innerHTML = '<p class="no-data">No dependencies to display.</p>';
-            return;
-        }
-        
-        const svg = this.createSVG(nodes, links);
-        this.container.appendChild(svg);
-    }
-    
-    buildNodes() {
-        const nodes = [];
-        
-        // Add tables
-        if (this.filters.tables) {
-            Object.values(this.data.tables).forEach(table => {
-                nodes.push({
-                    id: `table-${table.table_id}`,
-                    label: table.table_name,
-                    type: 'table',
-                    status: table.is_used ? 'used' : 'unused',
-                    x: 50,
-                    y: 50 + (nodes.length * 80)
-                });
-            });
-        }
-        
-        // Add forms
-        if (this.filters.forms) {
-            Object.values(this.data.objects).forEach(obj => {
-                if (obj.object_type === 'Form') {
-                    nodes.push({
-                        id: `form-${obj.object_id}`,
-                        label: obj.object_name,
-                        type: 'form',
-                        x: 400,
-                        y: 50 + (nodes.length * 60)
-                    });
-                }
-            });
-        }
-        
-        // Add queries
-        if (this.filters.queries) {
-            Object.values(this.data.objects).forEach(obj => {
-                if (obj.object_type === 'Query') {
-                    nodes.push({
-                        id: `query-${obj.object_id}`,
-                        label: obj.object_name,
-                        type: 'query',
-                        x: 250,
-                        y: 50 + (nodes.length * 60)
-                    });
-                }
-            });
-        }
-        
-        // Add macros
-        if (this.filters.macros) {
-            Object.values(this.data.objects).forEach(obj => {
-                if (obj.object_type === 'Macro') {
-                    nodes.push({
-                        id: `macro-${obj.object_id}`,
-                        label: obj.object_name,
-                        type: 'macro',
-                        x: 550,
-                        y: 50 + (nodes.length * 60)
-                    });
-                }
-            });
-        }
-        
-        // Add reports
-        if (this.filters.reports) {
-            Object.values(this.data.objects).forEach(obj => {
-                if (obj.object_type === 'Report') {
-                    nodes.push({
-                        id: `report-${obj.object_id}`,
-                        label: obj.object_name,
-                        type: 'report',
-                        x: 700,
-                        y: 50 + (nodes.length * 60)
-                    });
-                }
-            });
-        }
-        
-        return nodes;
-    }
-    
-    buildLinks() {
-        const links = [];
-        
-        // Table → Object links (from table.referencing_objects)
-        Object.values(this.data.tables).forEach(table => {
-            table.referencing_objects.forEach(ref => {
-                const targetId = `${ref.object_type.toLowerCase()}-${ref.object_id}`;
-                links.push({
-                    source: `table-${table.table_id}`,
-                    target: targetId,
-                    active: ref.active
-                });
-            });
-        });
-        
-        return links;
-    }
-    
-    createSVG(nodes, links) {
-        const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-        svg.setAttribute('width', '100%');
-        svg.setAttribute('height', Math.max(400, nodes.length * 70));
-        svg.setAttribute('viewBox', `0 0 800 ${Math.max(400, nodes.length * 70)}`);
-        
-        // Draw links
-        links.forEach(link => {
-            const source = nodes.find(n => n.id === link.source);
-            const target = nodes.find(n => n.id === link.target);
-            if (source && target) {
-                const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-                line.setAttribute('x1', source.x.toString());
-                line.setAttribute('y1', source.y.toString());
-                line.setAttribute('x2', target.x.toString());
-                line.setAttribute('y2', target.y.toString());
-                line.setAttribute('stroke', link.active ? '#16a34a' : '#dc2626');
-                line.setAttribute('stroke-width', '2');
-                svg.appendChild(line);
-            }
-        });
-        
-        // Draw nodes
-        nodes.forEach(node => {
-            const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-            
-            // Node rectangle
-            const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-            rect.setAttribute('x', (node.x - 60).toString());
-            rect.setAttribute('y', (node.y - 15).toString());
-            rect.setAttribute('width', '120');
-            rect.setAttribute('height', '30');
-            rect.setAttribute('rx', '5');
-            rect.setAttribute('fill', this.getNodeColor(node.type));
-            rect.setAttribute('stroke', node.status === 'unused' && node.type === 'table' ? '#dc2626' : 'none');
-            rect.setAttribute('stroke-width', '2');
-            g.appendChild(rect);
-            
-            // Node label
-            const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-            text.setAttribute('x', node.x.toString());
-            text.setAttribute('y', (node.y + 5).toString());
-            text.setAttribute('text-anchor', 'middle');
-            text.setAttribute('fill', 'white');
-            text.setAttribute('font-size', '12');
-            text.textContent = node.label.substring(0, 15) + (node.label.length > 15 ? '...' : '');
-            g.appendChild(text);
-            
-            svg.appendChild(g);
-        });
-        
-        return svg;
-    }
-    
-    getNodeColor(type) {
-        const colors = {
-            table: '#2563eb',
-            form: '#3b82f6',
-            query: '#f59e0b',
-            macro: '#dc2626',
-            report: '#16a34a'
-        };
-        return colors[type] || '#6b7280';
-    }
-}
-```
+// Bezier curve calculation for smooth connections
+const dx = target.x - source.x;
+const controlOffset = Math.min(dx * 0.4, 80);
 
-### Alternative: Mermaid Diagram
-
-For simpler implementation, use Mermaid.js:
-
-```html
-<div class="mermaid">
-graph TD
-    %% Table nodes
-    T1[Table: Customers] --> F1[Form: Customer Entry]
-    T1 --> Q1[Query: Customer Orders]
-    Q1 --> F2[Form: Order Entry]
-    Q1 --> R1[Report: Order Summary]
-    F2 --> M1[Macro: Validate Order]
-    M1 --> F1
-</div>
-```
-
-**JavaScript to generate Mermaid:**
-```javascript
-generateMermaidDiagram() {
-    let mermaid = 'graph TD\n';
-    
-    // Add table nodes
-    Object.values(this.data.tables).forEach(table => {
-        mermaid += `    T${table.table_id}["🗃️ ${table.table_name}"]\n`;
-    });
-    
-    // Add edges from tables to objects
-    Object.values(this.data.tables).forEach(table => {
-        table.referencing_objects.forEach(ref => {
-            const refType = ref.object_type.toLowerCase();
-            mermaid += `    T${table.table_id} --> ${refType.charAt(0).toUpperCase() + refType.slice(1)}${ref.object_id}["📄 ${ref.object_name}"]\n`;
-        });
-    });
-    
-    return mermaid;
-}
+const d = `M ${source.x + 60} ${source.y}
+           C ${source.x + 60 + controlOffset} ${source.y},
+             ${target.x - 60 - controlOffset} ${target.y},
+             ${target.x - 60} ${target.y}`;
 ```
 
 ---
 
-## Integration with Current HTML Generator
+## Integration with HTML Generator
 
-### Modified [`html_generator.py`](src/database_dependency_analyzer/generators/html_generator.py)
+### Main Content Generation
+The [`_generate_main_content()`](../../src/database_dependency_analyzer/generators/html_generator.py:270) method includes both sections:
 
-**Add to `_generate_main_content()`:**
 ```python
 def _generate_main_content(self) -> str:
     return f"""        <main class="main-content">
@@ -493,61 +203,14 @@ def _generate_main_content(self) -> str:
         </main>"""
 ```
 
-**Add new methods:**
-```python
-def _generate_usage_table_section(self) -> str:
-    """Generate usage status table section."""
-    return '''
-        <section class="usage-table-section">
-            <h2>Table Usage Status</h2>
-            <div class="usage-table-container">
-                <table class="usage-table">
-                    <thead>
-                        <tr>
-                            <th>Status</th>
-                            <th>Table Name</th>
-                            <th>Referencing Objects</th>
-                            <th>Object Types</th>
-                        </tr>
-                    </thead>
-                    <tbody id="usage-table-body"></tbody>
-                </table>
-            </div>
-        </section>
-    '''
-
-def _generate_dependency_diagram_section(self) -> str:
-    """Generate dependency diagram section."""
-    return '''
-        <section class="dependency-diagram-section">
-            <h2>Table Dependency Diagram</h2>
-            <div class="diagram-controls">
-                <label><input type="checkbox" id="show-tables" checked> Tables</label>
-                <label><input type="checkbox" id="show-forms" checked> Forms</label>
-                <label><input type="checkbox" id="show-queries" checked> Queries</label>
-                <label><input type="checkbox" id="show-macros" checked> Macros</label>
-                <label><input type="checkbox" id="show-reports" checked> Reports</label>
-            </div>
-            <div id="dependency-diagram" class="dependency-diagram"></div>
-        </section>
-    '''
-```
-
-**Add to `_generate_embedded_scripts()`:**
+### Initialization on Page Load
 ```javascript
-// Usage table renderer
 document.addEventListener('DOMContentLoaded', () => {
+    const controller = new ReportController();
     // Initialize usage table
-    const usageTableBody = document.getElementById('usage-table-body');
-    if (usageTableBody && typeof renderUsageTable === 'function') {
-        renderUsageTable();
-    }
-    
+    controller.renderUsageTable();
     // Initialize dependency diagram
-    const diagramContainer = document.getElementById('dependency-diagram');
-    if (diagramContainer && typeof initDependencyDiagram === 'function') {
-        initDependencyDiagram('dependency-diagram', window.analysisData);
-    }
+    controller.initDependencyDiagram();
 });
 ```
 
@@ -555,10 +218,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
 ## File Modifications Summary
 
-| File | Change | Description |
-|------|--------|-------------|
-| `src/database_dependency_analyzer/generators/html_generator.py` | Modify | Add usage table and dependency diagram sections |
-| `src/database_dependency_analyzer/generators/html_generator.py` | Modify | Add JavaScript for rendering table and diagram |
+| File | Change | Status |
+|------|--------|--------|
+| [`html_generator.py`](../../src/database_dependency_analyzer/generators/html_generator.py) | Added `_generate_usage_table_section()` | ✅ Complete |
+| [`html_generator.py`](../../src/database_dependency_analyzer/generators/html_generator.py) | Added `_generate_dependency_diagram_section()` | ✅ Complete |
+| [`html_generator.py`](../../src/database_dependency_analyzer/generators/html_generator.py) | Added CSS styles for usage table | ✅ Complete |
+| [`html_generator.py`](../../src/database_dependency_analyzer/generators/html_generator.py) | Added CSS styles for dependency diagram | ✅ Complete |
+| [`html_generator.py`](../../src/database_dependency_analyzer/generators/html_generator.py) | Added JavaScript for `renderUsageTable()` | ✅ Complete |
+| [`html_generator.py`](../../src/database_dependency_analyzer/generators/html_generator.py) | Added JavaScript for dependency diagram rendering | ✅ Complete |
 
 ---
 
@@ -576,22 +243,28 @@ document.addEventListener('DOMContentLoaded', () => {
 ### Dependency Diagram
 
 ```
-🗃️ Customers ──────► 📄 Customer Entry (Form)
-      │
-      └─────────────► 🔍 Customer Orders (Query)
-                           │
-                           └─► 📄 Order Entry (Form)
-                                    │
-                                    └─► ⚡ Validate Order (Macro)
+┌─────────────┐     ┌─────────────┐     ┌─────────────┐
+│   Tables    │     │   Queries   │     │    Forms    │
+├─────────────┤     ├─────────────┤     ├─────────────┤
+│             │     │             │     │             │
+│  Customers ─┼─────┼─► Customer ─┼─────┼─► Customer  │
+│             │     │    Orders   │     │    Entry    │
+│             │     │             │     │             │
+│  Orders ────┼─────┼─────────────┼─────┼─► Order     │
+│             │     │             │     │    Entry    │
+│             │     │             │     │             │
+│  Products ──┼─────┼─► Product ──┼─────┼─► Product   │
+│             │     │    List     │     │   Catalog   │
+└─────────────┘     └─────────────┘     └─────────────┘
 ```
 
 ---
 
-## Implementation Steps
+## Implementation Steps (Completed)
 
-1. Add `_generate_usage_table_section()` method to `HTMLGenerator`
-2. Add `_generate_dependency_diagram_section()` method to `HTMLGenerator`
-3. Add CSS styles for the usage table and diagram
-4. Add JavaScript functions to render the table rows and diagram
-5. Update `_generate_embedded_scripts()` to include new JS
-6. Test with sample data
+1. ✅ Add `_generate_usage_table_section()` method to `HTMLGenerator`
+2. ✅ Add `_generate_dependency_diagram_section()` method to `HTMLGenerator`
+3. ✅ Add CSS styles for the usage table and diagram
+4. ✅ Add JavaScript functions to render the table rows and diagram
+5. ✅ Update `_generate_embedded_scripts()` to include new JS
+6. ✅ Test with sample data
