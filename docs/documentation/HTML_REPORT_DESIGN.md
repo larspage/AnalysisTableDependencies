@@ -1257,3 +1257,388 @@ The report generator will:
 5. Render interactive components on page load
 
 This ensures the report is self-contained and can be viewed offline with full functionality.
+
+---
+
+## Implemented Features ✅
+
+The following features have been fully implemented in [`html_generator.py`](../../src/database_dependency_analyzer/generators/html_generator.py):
+
+### Usage Status Table ✅ IMPLEMENTED
+
+The Usage Status Table provides a clear overview of all tables and their usage status.
+
+#### Features
+- **Status Column**: Color-coded indicators (green ● for used, red ● for unused)
+- **Table Name Column**: Displays the table name
+- **Referencing Objects Column**: Lists all objects that reference the table with type badges
+- **Object Types Column**: Summary counts by object type (Form: 2, Query: 1, etc.)
+- **Row Highlighting**: Green background for used tables, red for unused
+- **Responsive Design**: Horizontal scroll for narrow viewports
+
+#### HTML Structure
+```html
+<section class="usage-table-section">
+    <h2>Table Usage Status</h2>
+    <div class="usage-table-container">
+        <table class="usage-table">
+            <thead>
+                <tr>
+                    <th>Status</th>
+                    <th>Table Name</th>
+                    <th>Referencing Objects</th>
+                    <th>Object Types</th>
+                </tr>
+            </thead>
+            <tbody id="usage-table-body">
+                <!-- Rows generated dynamically by JavaScript -->
+            </tbody>
+        </table>
+    </div>
+</section>
+```
+
+#### CSS Styles
+```css
+.usage-table-section {
+    margin: 2rem 0;
+}
+
+.usage-table-container {
+    overflow-x: auto;
+}
+
+.usage-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.usage-table tbody tr.row-used {
+    background: #f0fdf4;
+}
+
+.usage-table tbody tr.row-unused {
+    background: #fef2f2;
+}
+
+.status-indicator.used { color: #16a34a; }
+.status-indicator.unused { color: #dc2626; }
+```
+
+#### JavaScript Implementation
+The `renderUsageTable()` method in `ReportController` dynamically generates table rows:
+
+```javascript
+renderUsageTable() {
+    const tbody = document.getElementById('usage-table-body');
+    if (!tbody) return;
+
+    tbody.innerHTML = '';
+    const tables = Object.values(this.data.tables);
+
+    tables.forEach(table => {
+        const row = document.createElement('tr');
+        row.className = table.is_used ? 'row-used' : 'row-unused';
+
+        // Status cell with indicator
+        const statusCell = document.createElement('td');
+        statusCell.innerHTML = table.is_used
+            ? '<span class="status-indicator used">●</span> Used'
+            : '<span class="status-indicator unused">●</span> Unused';
+
+        // Table name cell
+        const nameCell = document.createElement('td');
+        nameCell.textContent = table.table_name;
+
+        // Referencing objects cell with badges
+        const refsCell = document.createElement('td');
+        // ... generates object list with type badges
+
+        // Object types summary cell
+        const typesCell = document.createElement('td');
+        // ... generates type count badges
+
+        row.appendChild(statusCell);
+        row.appendChild(nameCell);
+        row.appendChild(refsCell);
+        row.appendChild(typesCell);
+        tbody.appendChild(row);
+    });
+}
+```
+
+---
+
+### Dependency Diagram ✅ IMPLEMENTED
+
+The Dependency Diagram provides a visual representation of how tables are used throughout the Access application.
+
+#### Features
+- **Column-Based Layout**: Organized flow from Tables → Queries → Forms → Macros → Reports
+- **Curved Bezier Path Connections**: Smooth curved lines connecting related nodes
+- **Color-Coded Nodes**:
+  - Tables: Blue (#2563eb)
+  - Queries: Orange (#f59e0b)
+  - Forms: Blue (#3b82f6)
+  - Macros: Red (#dc2626)
+  - Reports: Green (#16a34a)
+- **Link Styling**:
+  - Active links: Solid green lines (#16a34a)
+  - Inactive links: Dashed red lines (#dc2626)
+- **Node Status Indicators**:
+  - Used tables: Green border
+  - Unused tables: Red border (3px)
+- **Interactive Filter Controls**: Checkboxes to show/hide each node type
+- **Visual Legend**: Color key for all node types and link states
+- **Dynamic SVG Rendering**: Diagram updates when filters change
+
+#### HTML Structure
+```html
+<section class="dependency-diagram-section">
+    <h2>Table Dependency Diagram</h2>
+    <div class="diagram-controls">
+        <label><input type="checkbox" id="show-tables" checked> Tables</label>
+        <label><input type="checkbox" id="show-forms" checked> Forms</label>
+        <label><input type="checkbox" id="show-queries" checked> Queries</label>
+        <label><input type="checkbox" id="show-macros" checked> Macros</label>
+        <label><input type="checkbox" id="show-reports" checked> Reports</label>
+    </div>
+    <div class="diagram-legend">
+        <span class="legend-title">Legend:</span>
+        <span class="legend-item"><span class="legend-color" style="background: #2563eb;"></span> Tables</span>
+        <span class="legend-item"><span class="legend-color" style="background: #f59e0b;"></span> Queries</span>
+        <span class="legend-item"><span class="legend-color" style="background: #3b82f6;"></span> Forms</span>
+        <span class="legend-item"><span class="legend-color" style="background: #dc2626;"></span> Macros</span>
+        <span class="legend-item"><span class="legend-color" style="background: #16a34a;"></span> Reports</span>
+        <span class="legend-separator">|</span>
+        <span class="legend-item"><span class="legend-line active"></span> Active Link</span>
+        <span class="legend-item"><span class="legend-line inactive"></span> Inactive Link</span>
+    </div>
+    <div id="dependency-diagram" class="dependency-diagram">
+        <!-- SVG diagram rendered here -->
+    </div>
+</section>
+```
+
+#### Column Layout Configuration
+```javascript
+const columns = {
+    table: { x: 100, yOffset: 60, nodeHeight: 40 },
+    query: { x: 350, yOffset: 60, nodeHeight: 35 },
+    form: { x: 550, yOffset: 60, nodeHeight: 35 },
+    macro: { x: 750, yOffset: 60, nodeHeight: 35 },
+    report: { x: 950, yOffset: 60, nodeHeight: 35 }
+};
+```
+
+#### Bezier Curve Path Generation
+```javascript
+// Calculate control points for smooth curved connections
+const dx = target.x - source.x;
+const controlOffset = Math.min(dx * 0.4, 80);
+
+const d = `M ${source.x + 60} ${source.y}
+           C ${source.x + 60 + controlOffset} ${source.y},
+             ${target.x - 60 - controlOffset} ${target.y},
+             ${target.x - 60} ${target.y}`;
+```
+
+#### JavaScript Implementation
+
+**Initialization:**
+```javascript
+initDependencyDiagram() {
+    this.diagramFilters = {
+        tables: true,
+        forms: true,
+        queries: true,
+        macros: true,
+        reports: true
+    };
+
+    // Initialize filter event listeners
+    document.querySelectorAll('.diagram-controls input[type="checkbox"]').forEach(checkbox => {
+        checkbox.addEventListener('change', (e) => {
+            const type = e.target.id.replace('show-', '');
+            this.diagramFilters[type] = e.target.checked;
+            this.renderDependencyDiagram();
+        });
+    });
+
+    this.renderDependencyDiagram();
+}
+```
+
+**Node Building:**
+```javascript
+buildDiagramNodes() {
+    const nodes = [];
+    
+    // Add tables (Column 1)
+    if (this.diagramFilters.tables) {
+        Object.values(this.data.tables).forEach(table => {
+            nodes.push({
+                id: `table-${table.table_id}`,
+                label: table.table_name,
+                type: 'table',
+                status: table.is_used ? 'used' : 'unused',
+                x: columns.table.x,
+                y: columns.table.yOffset
+            });
+            columns.table.yOffset += columns.table.nodeHeight;
+        });
+    }
+    
+    // Similar for queries, forms, macros, reports...
+    return nodes;
+}
+```
+
+**Link Building:**
+```javascript
+buildDiagramLinks() {
+    const links = [];
+
+    // Table → Object links (from table.referencing_objects)
+    Object.values(this.data.tables).forEach(table => {
+        table.referencing_objects.forEach(ref => {
+            const targetType = ref.object_type.toLowerCase();
+            const targetId = `${targetType}-${ref.object_id}`;
+            links.push({
+                source: `table-${table.table_id}`,
+                target: targetId,
+                active: ref.active
+            });
+        });
+    });
+
+    return links;
+}
+```
+
+**SVG Rendering:**
+```javascript
+createDiagramSVG(nodes, links) {
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    
+    // Calculate dimensions based on nodes
+    const maxY = Math.max(...nodes.map(n => n.y), 200);
+    const width = 1100;
+    const height = maxY + 60;
+    
+    svg.setAttribute('width', '100%');
+    svg.setAttribute('height', height.toString());
+    svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
+
+    // Add column headers
+    // Draw curved links (behind nodes)
+    // Draw nodes with color coding
+    // Add labels
+
+    return svg;
+}
+```
+
+#### CSS Styles
+```css
+.dependency-diagram-section {
+    margin: 2rem 0;
+    padding: 1rem;
+    background: #f9fafb;
+    border-radius: 8px;
+}
+
+.diagram-controls {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+}
+
+.diagram-legend {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.legend-color {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 2px;
+    margin-right: 4px;
+}
+
+.legend-line {
+    display: inline-block;
+    width: 20px;
+    height: 2px;
+    margin-right: 4px;
+}
+
+.legend-line.active {
+    background: #16a34a;
+}
+
+.legend-line.inactive {
+    background: #dc2626;
+    background: repeating-linear-gradient(
+        90deg,
+        #dc2626,
+        #dc2626 3px,
+        transparent 3px,
+        transparent 6px
+    );
+}
+
+.dependency-diagram {
+    width: 100%;
+    overflow-x: auto;
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 4px;
+}
+
+.diagram-node rect {
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+
+.diagram-node:hover rect {
+    opacity: 0.8;
+}
+
+.diagram-link {
+    pointer-events: none;
+}
+
+.diagram-link.inactive {
+    stroke-dasharray: 5,5;
+}
+```
+
+---
+
+### Integration Points
+
+Both features are integrated into the main content area via `_generate_main_content()`:
+
+```python
+def _generate_main_content(self) -> str:
+    return f"""        <main class="main-content">
+            {self._generate_usage_table_section()}
+            {self._generate_dependency_diagram_section()}
+        </main>"""
+```
+
+And initialized on page load:
+
+```javascript
+document.addEventListener('DOMContentLoaded', () => {
+    const controller = new ReportController();
+    controller.renderUsageTable();
+    controller.initDependencyDiagram();
+});
+```

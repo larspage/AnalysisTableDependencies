@@ -113,11 +113,32 @@ def analysis_config(tmp_path) -> AnalysisConfig:
 @pytest.fixture
 def sample_files_config() -> AnalysisConfig:
     """Provide configuration using actual sample XML files."""
+    # Get the project root directory (parent of tests directory)
+    project_root = Path(__file__).parent.parent
     return AnalysisConfig(
-        tables_file=Path("SampleXMLFiles/Analysis_Tables.xml"),
-        objects_file=Path("SampleXMLFiles/Analysis_Objects.xml"),
-        table_dependencies_file=Path("SampleXMLFiles/Analysis_TableDependencies.xml"),
-        object_dependencies_file=Path("SampleXMLFiles/Analysis_ObjectDependencies.xml"),
+        tables_file=project_root / "SampleXMLFiles" / "Analysis_Tables.xml",
+        objects_file=project_root / "SampleXMLFiles" / "Analysis_Objects.xml",
+        table_dependencies_file=project_root / "SampleXMLFiles" / "Analysis_TableDependencies.xml",
+        object_dependencies_file=project_root / "SampleXMLFiles" / "Analysis_ObjectDependencies.xml",
+        output_file=None,
+        console_output=False,
+        verbose=False,
+        ignore_inactive_dependencies=True,
+        max_workers=2,
+        memory_limit_mb=256
+    )
+
+
+@pytest.fixture
+def test_fixtures_config() -> AnalysisConfig:
+    """Provide configuration using test fixture XML files."""
+    # Get the test fixtures directory
+    fixtures_dir = Path(__file__).parent / "fixtures" / "xml"
+    return AnalysisConfig(
+        tables_file=fixtures_dir / "sample_tables.xml",
+        objects_file=fixtures_dir / "sample_objects.xml",
+        table_dependencies_file=fixtures_dir / "sample_table_deps.xml",
+        object_dependencies_file=fixtures_dir / "sample_object_deps.xml",
         output_file=None,
         console_output=False,
         verbose=False,
@@ -163,6 +184,7 @@ def sample_data_large() -> Tuple[Dict[int, Table], Dict[int, DatabaseObject], Li
     objects = {}
     object_types = ["Form", "Query", "Macro", "Report"]
     for i in range(1, 251):  # 250 objects
+        obj_type = object_types[i % len(object_types)]
         objects[i] = DatabaseObject(object_id=i, object_name=f"{obj_type}{i}", object_type=obj_type)
 
     # Create dependencies for ~70% of tables
