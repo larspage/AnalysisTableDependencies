@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Dependency Graph</title>
+    <script src="https://unpkg.com/3d-force-graph@1/dist/3d-force-graph.min.js"></script>
+    <script src="https://unpkg.com/three-spritetext/dist/three-spritetext.min.js"></script>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        body { background: #0f172a; color: #e2e8f0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; overflow: hidden; }
+
+        nav {
+            position: fixed; top: 0; left: 0; right: 0; height: 52px;
+            background: #1e293b; border-bottom: 1px solid rgba(255,255,255,0.08);
+            display: flex; align-items: center; padding: 0 20px; gap: 16px; z-index: 100;
+        }
+        nav a { color: #94a3b8; text-decoration: none; font-size: 0.875rem; font-weight: 500; }
+        nav a:hover { color: #e2e8f0; }
+        .nav-title { color: #e2e8f0; font-weight: 600; font-size: 0.95rem; margin-right: auto; }
+
+        #graph-container { position: fixed; top: 52px; left: 0; right: 0; bottom: 0; }
+
+        /* Loading */
+        #loading-overlay {
+            position: absolute; inset: 0; background: #0f172a;
+            display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; z-index: 50;
+        }
+        .spinner { width: 48px; height: 48px; border: 3px solid rgba(255,255,255,0.1); border-top-color: #2563eb; border-radius: 50%; animation: spin 0.8s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        #loading-overlay p { color: #94a3b8; font-size: 0.9rem; }
+
+        /* Primary info bar — top left */
+        #primary-bar {
+            position: absolute; top: 12px; left: 12px;
+            background: rgba(15,23,42,0.92); border: 1px solid rgba(251,191,36,0.4);
+            border-radius: 8px; padding: 8px 14px; z-index: 20;
+            backdrop-filter: blur(4px); display: none; max-width: 320px;
+        }
+        #primary-bar .pb-name { font-weight: 700; color: #fbbf24; font-size: 0.9rem; margin-bottom: 3px; }
+        #primary-bar .pb-stats { font-size: 0.75rem; color: #94a3b8; }
+
+        /* Search combo box — top center */
+        #search-panel {
+            position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
+            display: flex; flex-direction: column; align-items: center; gap: 6px; z-index: 25;
+        }
+
+        /* Type filter pill bar */
+        #type-filters {
+            display: flex; gap: 2px; background: rgba(15,23,42,0.92);
+            border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; padding: 3px;
+            backdrop-filter: blur(4px);
+        }
+        .type-radio { display: none; }
+        .type-label {
+            padding: 3px 10px; border-radius: 14px; font-size: 0.72rem; cursor: pointer;
+            color: #64748b; transition: all 0.15s; white-space: nowrap; user-select: none;
+        }
+        .type-label:hover { color: #e2e8f0; }
+        .type-radio:checked + .type-label { background: #334155; color: #e2e8f0; }
+
+        /* Input + dropdown wrapper */
+        #combo-wrapper { position: relative; }
+        #search-input {
+            background: rgba(30,41,59,0.95); border: 1px solid rgba(255,255,255,0.15);
+            color: #e2e8f0; padding: 7px 32px 7px 12px; border-radius: 6px; font-size: 0.82rem;
+            width: 260px; outline: none; backdrop-filter: blur(4px);
+        }
+        #search-input:focus { border-color: #2563eb; }
+        #search-clear {
+            position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+            color: #475569; cursor: pointer; font-size: 1rem; line-height: 1;
+            display: none; padding: 2px;
+        }
+        #search-clear:hover { color: #94a3b8; }
+
+        /* Dropdown */
+        #search-dropdown {
+            display: none; position: absolute; top: calc(100% + 4px); left: 0; right: 0;
+            background: rgba(10,18,36,0.98); border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 8px; max-height: 300px; overflow-y: auto; z-index: 50;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+        }
+        #search-dropdown::-webkit-scrollbar { width: 4px; }
+        #search-dropdown::-webkit-scrollbar-thumb { background: #334155; border-radius: 2px; }
+        .dd-item {
+            display: flex; align-items: center; gap: 8px; padding: 7px 12px;
+            cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.04);
+        }
+        .dd-item:last-child { border-bottom: none; }
+        .dd-item:hover, .dd-item.dd-active { background: rgba(255,255,255,0.07); }
+        .dd-dot  { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+        .dd-name { color: #e2e8f0; font-size: 0.82rem; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .dd-name em { font-style: normal; color: #fbbf24; }  /* matched chars */
+        .dd-meta { color: #475569; font-size: 0.7rem; flex-shrink: 0; }
+        .dd-empty { padding: 10px 12px; color: #475569; font-size: 0.8rem; text-align: center; }
+        @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-4px)} 75%{transform:translateX(4px)} }
+
+        /* Controls — top right */
+        #controls { position: absolute; top: 12px; right: 12px; display: flex; flex-direction: column; gap: 6px; z-index: 20; }
+        .ctrl-btn {
+            background: rgba(30,41,59,0.92); border: 1px solid rgba(255,255,255,0.12);
+            color: #e2e8f0; padding: 7px 14px; border-radius: 6px; font-size: 0.8rem;
+            cursor: pointer; backdrop-filter: blur(4px); transition: background 0.15s; white-space: nowrap;
+        }
+        .ctrl-btn:hover { background: rgba(51,65,85,0.95); }
+        .ctrl-btn.active { background: rgba(37,99,235,0.4); border-color: #2563eb; }
+
+        /* Legend — bottom left */
+        #legend {
+            position: absolute; bottom: 36px; left: 12px;
+            background: rgba(15,23,42,0.9); border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 8px; padding: 10px 14px; z-index: 20; backdrop-filter: blur(4px);
+        }
+        #legend h4 { font-size: 0.7rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px; }
+        .legend-row { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; font-size: 0.78rem; color: #cbd5e1; }
+        .legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+        /* Tooltip */
+        #tooltip {
+            position: absolute; background: rgba(15,23,42,0.96); border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 8px; padding: 9px 13px; pointer-events: none; z-index: 30; display: none; max-width: 240px;
+        }
+        #tooltip .tt-name  { font-weight: 600; color: #e2e8f0; font-size: 0.85rem; margin-bottom: 3px; word-break: break-word; }
+        #tooltip .tt-type  { font-size: 0.75rem; color: #94a3b8; margin-bottom: 2px; }
+        #tooltip .tt-conns { font-size: 0.75rem; color: #64748b; }
+        #tooltip .tt-hint  { font-size: 0.72rem; color: #334155; margin-top: 4px; }
+
+        /* Status bar */
+        #status-bar { position: absolute; bottom: 8px; right: 12px; font-size: 0.75rem; color: #475569; z-index: 20; }
+    </style>
+</head>
+<body>
+
+<nav>
+    <span class="nav-title">3D Dependency Graph</span>
+    <a href="/session/{{ session_id }}">← Results</a>
+    <a href="/">New Analysis</a>
+</nav>
+
+<div id="graph-container">
+    <!-- ForceGraph3D renders its canvas into this inner div, keeping it BELOW the overlays -->
+    <div id="graph-canvas" style="position:absolute;inset:0;z-index:0;"></div>
+
+    <div id="loading-overlay">
+        <div class="spinner"></div>
+        <p id="loading-msg">Loading graph data…</p>
+    </div>
+
+    <!-- Primary info -->
+    <div id="primary-bar">
+        <div class="pb-name" id="pb-name"></div>
+        <div class="pb-stats" id="pb-stats"></div>
+    </div>
+
+    <!-- Search combo box -->
+    <div id="search-panel">
+        <div id="type-filters">
+            <input class="type-radio" type="radio" name="ntype" id="t-all"     value="all"     checked><label class="type-label" for="t-all">All</label>
+            <input class="type-radio" type="radio" name="ntype" id="t-table"   value="Table"         ><label class="type-label" for="t-table">Tables</label>
+            <input class="type-radio" type="radio" name="ntype" id="t-query"   value="Queries"       ><label class="type-label" for="t-query">Queries</label>
+            <input class="type-radio" type="radio" name="ntype" id="t-form"    value="Forms"         ><label class="type-label" for="t-form">Forms</label>
+            <input class="type-radio" type="radio" name="ntype" id="t-macro"   value="Macros"        ><label class="type-label" for="t-macro">Macros</label>
+            <input class="type-radio" type="radio" name="ntype" id="t-report"  value="Reports"       ><label class="type-label" for="t-report">Reports</label>
+        </div>
+        <div id="combo-wrapper">
+            <input id="search-input" type="text" placeholder="Type to search…" autocomplete="off" />
+            <span id="search-clear" onclick="clearSearch()">✕</span>
+            <div id="search-dropdown"></div>
+        </div>
+    </div>
+
+    <!-- Controls -->
+    <div id="controls">
+        <button class="ctrl-btn" onclick="resetView()">Home</button>
+        <button class="ctrl-btn" id="labels-btn" onclick="toggleLabels()">Labels: Off</button>
+    </div>
+
+    <div id="legend">
+        <h4>Levels</h4>
+        <div class="legend-row"><div class="legend-dot" style="background:#fbbf24"></div>Primary (selected)</div>
+        <div class="legend-row"><div class="legend-dot" style="background:#e2e8f0"></div>1st link (direct)</div>
+        <div class="legend-row"><div class="legend-dot" style="background:#64748b"></div>2nd link</div>
+        <h4 style="margin-top:10px">Node Types</h4>
+        <div class="legend-row"><div class="legend-dot" style="background:#2563eb"></div>Table (used)</div>
+        <div class="legend-row"><div class="legend-dot" style="background:#6b7280"></div>Table (unused)</div>
+        <div class="legend-row"><div class="legend-dot" style="background:#f59e0b"></div>Queries</div>
+        <div class="legend-row"><div class="legend-dot" style="background:#3b82f6"></div>Forms</div>
+        <div class="legend-row"><div class="legend-dot" style="background:#dc2626"></div>Macros</div>
+        <div class="legend-row"><div class="legend-dot" style="background:#16a34a"></div>Reports</div>
+    </div>
+
+    <div id="tooltip">
+        <div class="tt-name"  id="tt-name"></div>
+        <div class="tt-type"  id="tt-type"></div>
+        <div class="tt-conns" id="tt-conns"></div>
+        <div class="tt-hint"  id="tt-hint"></div>
+    </div>
+
+    <div id="status-bar"></div>
+</div>
+
+<script>
+'use strict';
+
+// ── State ─────────────────────────────────────────────────────────────────────
+let fullData         = null;   // complete graph from server (never mutated structurally)
+let adjacency        = null;   // Map<id, Set<id>> — full graph
+let Graph            = null;
+let primaryId        = null;   // currently centred node
+let egoLevels        = null;   // Map<id, 0|1|2> for active subgraph
+let defaultPrimaryId = null;   // most-connected node (home)
+let showLabels       = false;
+
+// ── Node type colours ─────────────────────────────────────────────────────────
+const TYPE_HEX = {
+    Table_used:   '#2563eb',
+    Table_unused: '#6b7280',
+    Queries:      '#f59e0b',
+    Forms:        '#3b82f6',
+    Macros:       '#dc2626',
+    Reports:      '#16a34a',
+    Modules:      '#06b6d4',
+    _other:       '#8b5cf6',
+};
+function typeHex(node) {
+    if (node.isTable) return node.isUsed ? TYPE_HEX.Table_used : TYPE_HEX.Table_unused;
+    return TYPE_HEX[node.type] || TYPE_HEX._other;
+}
+
+// Blend hex toward dark bg for level-2 dimming
+const BG = [15, 23, 42];
+function blendHex(hex, t) {   // t=1 full colour, t=0 bg colour
+    const n = parseInt(hex.replace('#',''), 16);
+    const r = Math.round(((n>>16)&255)*t + BG[0]*(1-t));
+    const g = Math.round(((n>>8)&255)*t  + BG[1]*(1-t));
+    const b = Math.round((n&255)*t       + BG[2]*(1-t));
+    return `#${r.toString(16).padStart(2,'0')}${g.toString(16).padStart(2,'0')}${b.toString(16).padStart(2,'0')}`;
+}
+
+// ── Visual property accessors ─────────────────────────────────────────────────
+function nodeColor(node) {
+    if (!egoLevels) return typeHex(node);
+    const lvl = egoLevels.get(node.id) ?? 2;
+    if (lvl === 0) return '#fbbf24';              // gold  — primary
+    if (lvl === 1) return typeHex(node);           // full  — direct link
+    return blendHex(typeHex(node), 0.55);          // dimmed — 2nd link
+}
+function nodeVal(node) {
+    const base = node.val ?? 6;
+    if (!egoLevels) return base;
+    const lvl = egoLevels.get(node.id) ?? 2;
+    return base * [2.2, 1.1, 0.75][lvl];
+}
+function lSrc(l) { return typeof l.source === 'object' ? l.source.id : l.source; }
+function lTgt(l) { return typeof l.target === 'object' ? l.target.id : l.target; }
+function linkColor(link) {
+    if (!egoLevels) return '#475569';
+    const ml = Math.min(egoLevels.get(lSrc(link)) ?? 2, egoLevels.get(lTgt(link)) ?? 2);
+    return ml === 0 ? '#94a3b8' : ml === 1 ? '#475569' : '#2d3f52';
+}
+function linkWidth(link) {
+    if (!egoLevels) return 1;
+    const ml = Math.min(egoLevels.get(lSrc(link)) ?? 2, egoLevels.get(lTgt(link)) ?? 2);
+    return ml === 0 ? 2.0 : ml === 1 ? 1.2 : 0.6;
+}
+
+// ── Adjacency (full graph) ────────────────────────────────────────────────────
+function buildAdjacency(links) {
+    const adj = new Map();
+    for (const l of links) {
+        const s = lSrc(l), t = lTgt(l);
+        if (!adj.has(s)) adj.set(s, new Set());
+        if (!adj.has(t)) adj.set(t, new Set());
+        adj.get(s).add(t);
+        adj.get(t).add(s);
+    }
+    return adj;
+}
+
+// ── Ego subgraph ──────────────────────────────────────────────────────────────
+function computeEgoLevels(id) {
+    const lv = new Map([[id, 0]]);
+    const nb1 = adjacency.get(id) || new Set();
+    for (const n of nb1) lv.set(n, 1);
+    for (const n of nb1) {
+        for (const n2 of (adjacency.get(n) || new Set())) {
+            if (!lv.has(n2)) lv.set(n2, 2);
+        }
+    }
+    return lv;
+}
+
+function getEgoSubgraph(id) {
+    const levels = computeEgoLevels(id);
+    const subIds = new Set(levels.keys());
+    const subNodes = fullData.nodes.filter(n => subIds.has(n.id));
+    const subLinks = fullData.links.filter(l => subIds.has(lSrc(l)) && subIds.has(lTgt(l)));
+    return { nodes: subNodes, links: subLinks, levels };
+}
+
+// ── Set primary ───────────────────────────────────────────────────────────────
+function setPrimary(nodeId) {
+    // Unpin the previous primary
+    if (primaryId) {
+        const prev = fullData.nodes.find(n => n.id === primaryId);
+        if (prev) { delete prev.fx; delete prev.fy; delete prev.fz; }
+    }
+
+    primaryId = nodeId;
+    const { nodes, links, levels } = getEgoSubgraph(nodeId);
+    egoLevels = levels;
+
+    // Pin new primary at origin so it's always centred
+    const primary = fullData.nodes.find(n => n.id === nodeId);
+    if (primary) { primary.fx = 0; primary.fy = 0; primary.fz = 0; }
+
+    // Update the rendered graph (preserves positions of surviving nodes → smooth)
+    Graph.graphData({ nodes, links });
+
+    // Fly camera to look at origin
+    Graph.cameraPosition({ x: 0, y: 30, z: 480 }, { x: 0, y: 0, z: 0 }, 900);
+
+    // Update info bar
+    const nb1 = (adjacency.get(nodeId) || new Set()).size;
+    const nb2 = [...levels.values()].filter(v => v === 2).length;
+    document.getElementById('pb-name').textContent = primary?.name || nodeId;
+    document.getElementById('pb-stats').textContent =
+        `${nb1} direct connection${nb1 !== 1 ? 's' : ''}  ·  ${nb2} second-level node${nb2 !== 1 ? 's' : ''}`;
+    document.getElementById('primary-bar').style.display = 'block';
+
+    document.getElementById('status-bar').textContent =
+        `Showing ${nodes.length} nodes · ${links.length} links`;
+
+    // Refresh label sprites if on
+    if (showLabels) Graph.nodeThreeObject(makeSpriteLabel).nodeThreeObjectExtend(true);
+}
+
+// ── Controls ──────────────────────────────────────────────────────────────────
+function resetView() {
+    if (defaultPrimaryId) setPrimary(defaultPrimaryId);
+}
+
+// ── Combo box search ──────────────────────────────────────────────────────────
+let ddHighlight = -1;
+
+function escHtml(s) {
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+function highlightMatch(name, q) {
+    if (!q) return escHtml(name);
+    const idx = name.toLowerCase().indexOf(q.toLowerCase());
+    if (idx < 0) return escHtml(name);
+    return escHtml(name.slice(0, idx)) +
+           '<em>' + escHtml(name.slice(idx, idx + q.length)) + '</em>' +
+           escHtml(name.slice(idx + q.length));
+}
+
+function getSelectedType() {
+    return document.querySelector('input[name="ntype"]:checked')?.value || 'all';
+}
+
+function updateDropdown() {
+    const q    = document.getElementById('search-input').value.trim();
+    const type = getSelectedType();
+    const dd   = document.getElementById('search-dropdown');
+    const clr  = document.getElementById('search-clear');
+
+    clr.style.display = q ? 'block' : 'none';
+    ddHighlight = -1;
+
+    if (!fullData || (!q && type === 'all')) { dd.style.display = 'none'; return; }
+
+    const matches = fullData.nodes.filter(n => {
+        const typeOk = type === 'all' || (type === 'Table' ? n.isTable : n.type === type);
+        const nameOk = !q || n.name.toLowerCase().includes(q.toLowerCase());
+        return typeOk && nameOk;
+    }).slice(0, 20);
+
+    if (!matches.length) {
+        dd.innerHTML = '<div class="dd-empty">No matches</div>';
+        dd.style.display = 'block';
+        return;
+    }
+
+    dd.innerHTML = matches.map((n, i) => {
+        const deg = adjacency?.get(n.id)?.size ?? 0;
+        return `<div class="dd-item" data-id="${n.id}" data-idx="${i}"
+                     onmousedown="pickNode('${n.id}')">
+            <span class="dd-dot" style="background:${typeHex(n)}"></span>
+            <span class="dd-name">${highlightMatch(n.name, q)}</span>
+            <span class="dd-meta">${escHtml(n.type)} · ${deg}</span>
+        </div>`;
+    }).join('');
+    dd.style.display = 'block';
+}
+
+function pickNode(nodeId) {
+    const node = fullData.nodes.find(n => n.id === nodeId);
+    if (!node) return;
+    document.getElementById('search-input').value = node.name;
+    document.getElementById('search-clear').style.display = 'block';
+    document.getElementById('search-dropdown').style.display = 'none';
+    setPrimary(nodeId);
+}
+
+function clearSearch() {
+    document.getElementById('search-input').value = '';
+    document.getElementById('search-clear').style.display = 'none';
+    document.getElementById('search-dropdown').style.display = 'none';
+    ddHighlight = -1;
+}
+
+// Keyboard nav inside the dropdown
+document.getElementById('search-input').addEventListener('keydown', e => {
+    const dd    = document.getElementById('search-dropdown');
+    const items = dd.querySelectorAll('.dd-item');
+    if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        ddHighlight = Math.min(ddHighlight + 1, items.length - 1);
+        items.forEach((el, i) => el.classList.toggle('dd-active', i === ddHighlight));
+    } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        ddHighlight = Math.max(ddHighlight - 1, -1);
+        items.forEach((el, i) => el.classList.toggle('dd-active', i === ddHighlight));
+    } else if (e.key === 'Enter') {
+        if (ddHighlight >= 0 && items[ddHighlight]) {
+            pickNode(items[ddHighlight].dataset.id);
+        } else if (items.length === 1) {
+            pickNode(items[0].dataset.id);
+        }
+    } else if (e.key === 'Escape') {
+        dd.style.display = 'none';
+    }
+});
+document.getElementById('search-input').addEventListener('input', updateDropdown);
+document.getElementById('search-input').addEventListener('focus', updateDropdown);
+document.getElementById('search-input').addEventListener('blur', () => {
+    // small delay so mousedown on dd-item fires first
+    setTimeout(() => { document.getElementById('search-dropdown').style.display = 'none'; }, 150);
+});
+// Re-filter when type radio changes
+document.querySelectorAll('input[name="ntype"]').forEach(r =>
+    r.addEventListener('change', updateDropdown)
+);
+
+// ── Labels ────────────────────────────────────────────────────────────────────
+function makeSpriteLabel(node) {
+    if (typeof SpriteText === 'undefined') return null;
+    const sprite = new SpriteText(node.name);
+    sprite.color = nodeColor(node);
+    sprite.textHeight = 4.5;
+    sprite.material.depthWrite = false;
+    sprite.position.y = (nodeVal(node) * 0.9) + 6;
+    return sprite;
+}
+function toggleLabels() {
+    showLabels = !showLabels;
+    const btn = document.getElementById('labels-btn');
+    btn.textContent = `Labels: ${showLabels ? 'On' : 'Off'}`;
+    btn.classList.toggle('active', showLabels);
+    if (!Graph) return;
+    if (showLabels) {
+        Graph.nodeThreeObject(makeSpriteLabel).nodeThreeObjectExtend(true);
+    } else {
+        Graph.nodeThreeObject(null).nodeThreeObjectExtend(false);
+    }
+}
+
+// ── Tooltip ───────────────────────────────────────────────────────────────────
+const tooltip = document.getElementById('tooltip');
+let mouseX = 0, mouseY = 0;
+document.getElementById('graph-container').addEventListener('mousemove', e => {
+    const r = e.currentTarget.getBoundingClientRect();
+    mouseX = e.clientX - r.left;
+    mouseY = e.clientY - r.top;
+    if (tooltip.style.display === 'block') {
+        tooltip.style.left = (mouseX + 14) + 'px';
+        tooltip.style.top  = (mouseY - 10) + 'px';
+    }
+});
+function showTooltip(node) {
+    const totalConns = adjacency?.get(node.id)?.size ?? 0;
+    const lvl = egoLevels?.get(node.id) ?? 2;
+    const lvlLabel = ['Primary', '1st link', '2nd link'][lvl] ?? '';
+    document.getElementById('tt-name').textContent  = node.name;
+    document.getElementById('tt-type').textContent  = node.type + (node.isTable ? (node.isUsed ? ' · used' : ' · unused') : '');
+    document.getElementById('tt-conns').textContent = `${totalConns} total connection${totalConns !== 1 ? 's' : ''}  ·  ${lvlLabel}`;
+    document.getElementById('tt-hint').textContent  = lvl > 0 ? 'Click to make primary' : '';
+    tooltip.style.left = (mouseX + 14) + 'px';
+    tooltip.style.top  = (mouseY - 10) + 'px';
+    tooltip.style.display = 'block';
+}
+function hideTooltip() { tooltip.style.display = 'none'; }
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+function initGraph(data) {
+    fullData  = data;
+    adjacency = buildAdjacency(data.links);
+
+    // Pick most-connected node as home
+    let maxDeg = 0;
+    for (const n of fullData.nodes) {
+        const d = adjacency.get(n.id)?.size || 0;
+        if (d > maxDeg) { maxDeg = d; defaultPrimaryId = n.id; }
+    }
+
+    const container = document.getElementById('graph-container');
+    // Render into the dedicated inner div so the canvas stays BELOW overlay elements
+    const canvasDiv = document.getElementById('graph-canvas');
+    const W = container.offsetWidth  || window.innerWidth;
+    const H = container.offsetHeight || (window.innerHeight - 52);
+
+    // Pick a node with median connectivity as the starting view (not the hub with hundreds of links)
+    const degrees = fullData.nodes.map(n => ({ id: n.id, deg: adjacency.get(n.id)?.size || 0 }));
+    degrees.sort((a, b) => a.deg - b.deg);
+    const medianEntry = degrees[Math.floor(degrees.length * 0.75)]; // 75th percentile — connected but not overwhelming
+    defaultPrimaryId = medianEntry.id;
+
+    // Compute initial subgraph before creating the graph
+    const { nodes: initNodes, links: initLinks, levels } = getEgoSubgraph(defaultPrimaryId);
+    egoLevels  = levels;
+    primaryId  = defaultPrimaryId;
+
+    // Pin default primary at origin
+    const primary = fullData.nodes.find(n => n.id === defaultPrimaryId);
+    if (primary) { primary.fx = 0; primary.fy = 0; primary.fz = 0; }
+
+    Graph = ForceGraph3D()(canvasDiv)
+        .width(W).height(H)
+        .backgroundColor('#0f172a')
+        .graphData({ nodes: initNodes, links: initLinks })
+        .nodeId('id')
+        .nodeLabel('')
+        .nodeVal(nodeVal)
+        .nodeColor(nodeColor)
+        .nodeOpacity(0.95)
+        .linkColor(linkColor)
+        .linkWidth(linkWidth)
+        .linkOpacity(0.9)
+        .onNodeClick(node => { if (node) setPrimary(node.id); })
+        .onBackgroundClick(() => {})   // keep current primary on background click
+        .onNodeHover(node => {
+            if (node) { showTooltip(node); container.style.cursor = 'pointer'; }
+            else      { hideTooltip();     container.style.cursor = ''; }
+        });
+
+    // Spread nodes out — stronger repulsion for cleaner layout
+    Graph.d3Force('charge').strength(-120);
+
+    // Initial camera
+    Graph.cameraPosition({ x: 0, y: 30, z: 480 });
+
+    // Info bar
+    const nb1 = (adjacency.get(defaultPrimaryId) || new Set()).size;
+    const nb2 = [...levels.values()].filter(v => v === 2).length;
+    document.getElementById('pb-name').textContent  = primary?.name || defaultPrimaryId;
+    document.getElementById('pb-stats').textContent =
+        `${nb1} direct connection${nb1 !== 1 ? 's' : ''}  ·  ${nb2} second-level node${nb2 !== 1 ? 's' : ''}`;
+    document.getElementById('primary-bar').style.display = 'block';
+    document.getElementById('status-bar').textContent =
+        `Showing ${initNodes.length} nodes · ${initLinks.length} links`;
+
+    document.getElementById('loading-overlay').style.display = 'none';
+
+    window.addEventListener('resize', () => {
+        Graph.width(canvasDiv.offsetWidth).height(canvasDiv.offsetHeight);
+    });
+}
+
+// ── Boot ──────────────────────────────────────────────────────────────────────
+// ── Global error catcher ──────────────────────────────────────────────────────
+function showError(msg) {
+    const ol = document.getElementById('loading-overlay');
+    ol.style.display = 'flex';
+    ol.innerHTML = `<div style="background:#1e293b;border:1px solid #ef4444;border-radius:8px;padding:24px;max-width:500px;font-size:0.85rem;color:#fca5a5;">
+        <strong style="color:#ef4444;display:block;margin-bottom:8px">Graph Error</strong>
+        <pre style="white-space:pre-wrap;word-break:break-all">${msg}</pre>
+        <a href="/session/{{ session_id }}" style="display:block;margin-top:14px;color:#94a3b8">← Back to Results</a>
+    </div>`;
+}
+window.onerror = (msg, src, line, col, err) => showError(`${msg}\n${src}:${line}:${col}`);
+
+// ── Version stamp (confirms new template is loaded) ───────────────────────────
+document.getElementById('status-bar').textContent = 'v3 · loading…';
+
+if (typeof ForceGraph3D === 'undefined') {
+    showError('3D library (ForceGraph3D) failed to load from CDN.\nCheck your internet connection.');
+} else {
+    fetch('/session/{{ session_id }}/graph-data')
+        .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status} from /graph-data`); return r.json(); })
+        .then(data => {
+            if (!data.nodes?.length) throw new Error('No connected nodes returned from server.');
+            try {
+                initGraph(data);
+            } catch(e) {
+                showError('initGraph threw:\n' + e.stack);
+            }
+        })
+        .catch(err => showError('Fetch/parse error:\n' + err.message));
+}
+</script>
+</body>
+</html>

@@ -318,6 +318,7 @@
         </div>
         <div class="header-actions">
             <a href="/" class="btn btn-secondary">← New Analysis</a>
+            <a href="/session/{{ session_id }}/graph" class="btn btn-secondary">3D Graph</a>
             <button class="btn btn-secondary" id="save-report-btn" onclick="showSaveModal()">💾 Save Report</button>
             <a href="/session/{{ session_id }}/download" class="btn btn-primary">Download Report</a>
         </div>
@@ -451,30 +452,7 @@
                     '<p style="color: #94a3b8;">No usage data available.</p>';
                 return;
             }
-            
-            // Prepare data for DataTable
-            const data = usage.objects.map(obj => {
-                const statusClass = obj.is_used ? 'usage-active' : 'usage-inactive';
-                const statusText = obj.is_used ? 'Active' : 'Unused';
-                
-                // Build referenced by list
-                let referencedByList = '-';
-                if (obj.referenced_by && obj.referenced_by.length > 0) {
-                    referencedByList = obj.referenced_by.map(ref =>
-                        `${ref.object_name} (${ref.object_type})`
-                    ).join(', ');
-                }
-                
-                return [
-                    obj.name || obj.object_name,
-                    obj.object_type || '-',
-                    `<span class="usage-badge ${statusClass}">${statusText}</span>`,
-                    referencedByList,
-                    obj.dependency_count || 0
-                ];
-            });
-            
-            // Create HTML for DataTable with filter row
+
             let html = `
                 <table id="usage-table" class="data-table display" style="width:100%">
                     <thead>
@@ -493,22 +471,43 @@
                             <th></th>
                         </tr>
                     </thead>
-                </table>
+                    <tbody>
             `;
-            
+
+            usage.objects.forEach(obj => {
+                const statusClass = obj.is_used ? 'usage-active' : 'usage-inactive';
+                const statusText = obj.is_used ? 'Active' : 'Unused';
+
+                let referencedByFull = '-';
+                let referencedByList = '-';
+                if (obj.referenced_by && obj.referenced_by.length > 0) {
+                    referencedByFull = obj.referenced_by.map(ref =>
+                        `${ref.object_name} (${ref.object_type})`
+                    ).join(', ');
+
+                    const maxLength = 50;
+                    referencedByList = referencedByFull.length > maxLength
+                        ? referencedByFull.substring(0, maxLength) + '...'
+                        : referencedByFull;
+                }
+
+                html += `
+                    <tr>
+                        <td>${obj.name || obj.object_name}</td>
+                        <td>${obj.object_type || '-'}</td>
+                        <td><span class="usage-badge ${statusClass}">${statusText}</span></td>
+                        <td style="max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${referencedByFull}">${referencedByList}</td>
+                        <td>${obj.dependency_count || 0}</td>
+                    </tr>
+                `;
+            });
+
+            html += '</tbody></table>';
             document.getElementById('usage-container').innerHTML = html;
-            
-            // Initialize DataTable
+
+            // Initialize DataTable on the pre-built HTML table
             $(document).ready(function() {
                 const table = $('#usage-table').DataTable({
-                    data: data,
-                    columns: [
-                        { title: "Object Name" },
-                        { title: "Type" },
-                        { title: "Status" },
-                        { title: "Referenced By" },
-                        { title: "Count" }
-                    ],
                     pageLength: 25,
                     lengthMenu: [10, 25, 50, 100],
                     ordering: true,
@@ -521,12 +520,9 @@
                         { targets: [4], className: "dt-right" }
                     ],
                     initComplete: function() {
-                        // Apply type-ahead filtering for Object Name column
                         $('#filter-object-name').on('keyup change clear', function() {
                             table.column(0).search(this.value).draw();
                         });
-                        
-                        // Apply type-ahead filtering for Type column
                         $('#filter-type').on('keyup change clear', function() {
                             table.column(1).search(this.value).draw();
                         });

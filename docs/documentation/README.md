@@ -9,6 +9,7 @@ A Python utility for analyzing Microsoft Access database dependencies. This tool
 - Generates responsive HTML reports with dependency visualization
 - Command-line interface with progress feedback
 - **Interactive web interface** with file upload and REST API
+- **3D interactive dependency graph** — ego-network view with search, hover tooltips, and smooth camera transitions
 - Handles large databases (500+ tables, 6000+ objects) efficiently
 
 ## Installation
@@ -122,6 +123,7 @@ src/database_dependency_analyzer/
 │   └── templates/
 │       ├── index.html
 │       ├── results.html
+│       ├── graph.html        # 3D interactive dependency graph
 │       └── error.html
 └── console/          # CLI interface
     ├── argument_parser.py

@@ -7,6 +7,7 @@ The Database Dependency Analyzer includes a Flask-based web interface that provi
 - View analysis results with statistics
 - Download HTML reports
 - Access analysis via REST API
+- Explore dependencies as an interactive 3D force-directed graph
 
 ## Installation
 
@@ -59,6 +60,40 @@ After uploading files, you'll be redirected to a results page showing:
   - Usage table
   - Statistics
 - Download report button
+
+### 3D Graph Page (`/session/{session_id}/graph`)
+
+An interactive 3D force-directed graph of all database object dependencies.
+Launched via the **3D Graph** button on the Results page.
+
+**Features:**
+- **Ego-network view** — always shows one primary node centred, surrounded by its direct (L1) and second-level (L2) connections only. Everything else is hidden to reduce clutter.
+- **Gold primary node** — the currently selected node is highlighted in gold and pinned at the centre.
+- **Click to navigate** — clicking any visible node makes it the new primary; the camera flies smoothly to it and the subgraph refreshes around it.
+- **Search combo box** — type-ahead search with type filter pills (All / Tables / Queries / Forms / Macros / Reports). Shows a dropdown of up to 20 matching nodes with colour-coded type dots and connection counts. Supports keyboard navigation (↑ ↓ Enter Escape).
+- **Hover tooltip** — shows node name, type, total connections, and ego level.
+- **Labels toggle** — turns on floating 3D name labels (SpriteText) for all visible nodes.
+- **Home button** — returns to the default starting node (median-connectivity node).
+- **Legend** — colour key for node types and ego levels.
+
+**Node colour scheme:**
+
+| Node | Colour |
+|------|--------|
+| Primary (selected) | Gold `#fbbf24` |
+| Table (used) | Blue `#2563eb` |
+| Table (unused) | Grey `#6b7280` |
+| Queries | Amber `#f59e0b` |
+| Forms | Blue `#3b82f6` |
+| Macros | Red `#dc2626` |
+| Reports | Green `#16a34a` |
+
+**API endpoints added:**
+
+| Endpoint | Description |
+|----------|-------------|
+| `GET /session/{id}/graph` | Renders the 3D graph page |
+| `GET /session/{id}/graph-data` | Returns `{ nodes, links, meta }` JSON for the graph. Orphan nodes (no connections) are excluded. Node IDs are prefixed (`t_` for tables, `o_` for objects) to avoid numeric collisions. |
 
 ### Error Page (`/error`)
 

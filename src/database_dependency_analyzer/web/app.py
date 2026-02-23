@@ -259,7 +259,13 @@ def perform_analysis(tables_path: str, objects_path: str,
     
     # Generate simple HTML report
     html_content = generate_simple_html_report(tables, objects, statistics)
-    
+
+    # Serialize object-to-object dependency links for graph visualization
+    object_links = [
+        {'source': dep['source_object_id'], 'target': dep['target_object_id'], 'active': dep['active']}
+        for dep in object_dependencies
+    ]
+
     return {
         'analysis_result': {
             'tables': tables,
@@ -268,7 +274,8 @@ def perform_analysis(tables_path: str, objects_path: str,
         },
         'statistics': statistics,
         'usage_summary': usage_summary,
-        'html_report': html_content
+        'html_report': html_content,
+        'object_links': object_links
     }
 
 
@@ -485,6 +492,110 @@ def get_session_data(session_id: str):
         return jsonify({'error': 'Session not found or expired'}), 404
     
     return jsonify(analysis_sessions[session_id]['results'])
+
+
+@app.route('/session/<session_id>/graph')
+def view_graph(session_id: str):
+    """Render the 3D interactive graph page for a session."""
+    if session_id not in analysis_sessions:
+        return render_template('error.html', error='Session not found or expired'), 404
+    return render_template('graph.html', session_id=session_id)
+
+
+@app.route('/session/<session_id>/graph-data')
+def get_graph_data(session_id: str):
+    """Return graph node/link data optimized for 3d-force-graph."""
+    if session_id not in analysis_sessions:
+        return jsonify({'error': 'Session not found or expired'}), 404
+
+    results = analysis_sessions[session_id]['results']
+    analysis = results['analysis_result']
+    tables = analysis['tables']
+    objects = analysis['objects']
+    object_links = results.get('object_links', [])
+
+    # Build nodes — prefix IDs to avoid numeric collisions between tables and objects
+    nodes = []
+    valid_node_ids = set()
+
+    for table_id, table in tables.items():
+        ref_count = len(table.get('referencing_objects', []))
+        node_id = f't_{table_id}'
+        valid_node_ids.add(node_id)
+        nodes.append({
+            'id': node_id,
+            'name': table['table_name'],
+            'type': 'Table',
+            'isTable': True,
+            'isUsed': table.get('is_used', False),
+            'val': 6 + min(ref_count, 10)
+        })
+
+    type_label_map = {
+        'form': 'Forms', 'forms': 'Forms',
+        'query': 'Queries', 'queries': 'Queries',
+        'macro': 'Macros', 'macros': 'Macros',
+        'report': 'Reports', 'reports': 'Reports',
+        'module': 'Modules', 'modules': 'Modules',
+    }
+
+    for obj_id, obj in objects.items():
+        node_id = f'o_{obj_id}'
+        valid_node_ids.add(node_id)
+        raw_type = (obj.get('object_type') or 'unknown').strip().lower()
+        display_type = type_label_map.get(raw_type, obj.get('object_type') or 'Object')
+        nodes.append({
+            'id': node_id,
+            'name': obj['object_name'],
+            'type': display_type,
+            'isTable': False,
+            'isUsed': True,
+            'val': 4
+        })
+
+    # Build links
+    links = []
+
+    # Object → Table links from referencing_objects
+    for table_id, table in tables.items():
+        t_node_id = f't_{table_id}'
+        for ref in table.get('referencing_objects', []):
+            o_node_id = f'o_{ref["object_id"]}'
+            if o_node_id in valid_node_ids and t_node_id in valid_node_ids:
+                links.append({
+                    'source': o_node_id,
+                    'target': t_node_id,
+                    'type': 'uses_table',
+                    'active': True
+                })
+
+    # Object → Object links
+    for link in object_links:
+        src = f'o_{link["source"]}'
+        tgt = f'o_{link["target"]}'
+        if src in valid_node_ids and tgt in valid_node_ids:
+            links.append({
+                'source': src,
+                'target': tgt,
+                'type': 'uses_object',
+                'active': link.get('active', True)
+            })
+
+    # Remove orphan nodes (nodes with no links)
+    connected_ids = set()
+    for link in links:
+        connected_ids.add(link['source'])
+        connected_ids.add(link['target'])
+    nodes = [n for n in nodes if n['id'] in connected_ids]
+
+    return jsonify({
+        'nodes': nodes,
+        'links': links,
+        'meta': {
+            'node_count': len(nodes),
+            'link_count': len(links)
+        }
+    })
 
 
 @app.route('/session/<session_id>/report')
